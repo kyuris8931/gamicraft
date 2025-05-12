@@ -24,55 +24,68 @@ let currentEnemyHP;
 let currentEnemyMaxHP;
 let gamePlayerName;
 
-// Fungsi ini akan dipanggil oleh AutoTools WebScreen (Display Mode: Update)
-// untuk mengupdate nilai variabel yang didefinisikan di <meta> tag.
-window.autoToolsUpdateValues = function(values) {
+// =============================================================
+// PERUBAHAN DI SINI: Deklarasi fungsi autoToolsUpdateValues
+// Menggunakan 'var' di scope global, mirip dengan demo AutoTools
+// =============================================================
+var autoToolsUpdateValues = function(values) {
     logToPwaDebug("Fungsi GLOBAL autoToolsUpdateValues dipanggil oleh Tasker.");
     logToPwaDebug("Data yang diterima (values): " + JSON.stringify(values));
 
+    // Ambil referensi elemen di dalam fungsi ini agar selalu terupdate jika ada perubahan DOM (meskipun sebaiknya tidak)
     const displayRealtimeEl = document.getElementById('displayRealtimeUpdate');
     const gameStatusEl = document.getElementById('gameStatus');
+    const gameEnemyHPEl = document.getElementById('gameEnemyHP'); // Pastikan elemen ini ada
 
-    // Skenario 3: Tasker mengupdate nilai 'realtimeUpdateValue'
-    // Ini adalah meta tag yang kita buat khusus untuk demo update real-time
-    if (typeof values.realtimeUpdateValue !== 'undefined') { 
+    // Skenario: Tasker mengupdate nilai 'realtimeUpdateValue'
+    if (typeof values.realtimeUpdateValue !== 'undefined') {
         logToPwaDebug(`Nilai realtimeUpdateValue diupdate menjadi: "${values.realtimeUpdateValue}"`);
         if (displayRealtimeEl) {
             displayRealtimeEl.textContent = `Update dari Tasker: ${values.realtimeUpdateValue}`;
         }
-        // Contoh: Jika Tasker mengirim perintah untuk menambah HP musuh
-        // Anda bisa membuat variabel meta lain seperti "enemyHPIncrement"
-        // atau mengirim JSON string di "realtimeUpdateValue" lalu di-parse.
-        // Untuk contoh ini, kita asumsikan Tasker mengirim HP baru musuh via "enemyHP"
     }
 
-    // Skenario 3 Lanjutan: Tasker mengupdate HP Musuh secara langsung
-    // Kita akan menggunakan variabel meta 'enemyHP' yang sama dengan yang diinisialisasi
-    // AutoTools akan mengirim nilai baru untuk 'enemyHP' dalam objek 'values'
+    // Skenario: Tasker mengupdate HP Musuh secara langsung
     if (typeof values.enemyHP !== 'undefined') {
+        // Pastikan currentEnemyHP dan currentEnemyMaxHP sudah diinisialisasi (biasanya di DOMContentLoaded)
+        if (typeof currentEnemyHP === 'undefined' || typeof currentEnemyMaxHP === 'undefined') {
+            logToPwaDebug("ERROR: currentEnemyHP atau currentEnemyMaxHP belum diinisialisasi sebelum update.");
+            // Mungkin perlu mengambil nilai saat ini dari DOM jika belum ada di variabel JS
+             const hpElement = document.getElementById('gameEnemyHP');
+             const maxHpElement = document.getElementById('gameEnemyMaxHP');
+             if (hpElement) currentEnemyHP = parseInt(hpElement.textContent, 10) || 0; // Ambil dari DOM jika perlu
+             if (maxHpElement) currentEnemyMaxHP = parseInt(maxHpElement.textContent, 10) || 100; // Ambil dari DOM jika perlu
+        }
+
         const newEnemyHP = parseInt(values.enemyHP, 10);
         if (!isNaN(newEnemyHP)) {
             currentEnemyHP = newEnemyHP;
             // Pastikan tidak melebihi MaxHP jika ada logika heal, atau tidak kurang dari 0
-            currentEnemyHP = Math.max(0, Math.min(currentEnemyHP, currentEnemyMaxHP)); 
-            
+            // Juga pastikan currentEnemyMaxHP adalah angka yang valid
+             if (isNaN(currentEnemyMaxHP)) { currentEnemyMaxHP = currentEnemyHP; } // Fallback jika MaxHP tidak valid
+            currentEnemyHP = Math.max(0, Math.min(currentEnemyHP, currentEnemyMaxHP));
+
             logToPwaDebug(`HP Musuh diupdate oleh Tasker menjadi: ${currentEnemyHP}`);
-            document.getElementById('gameEnemyHP').textContent = currentEnemyHP;
+            if (gameEnemyHPEl) gameEnemyHPEl.textContent = currentEnemyHP; // Update tampilan HP
             if (gameStatusEl) gameStatusEl.textContent = `HP Musuh diupdate Tasker menjadi ${currentEnemyHP}.`;
-            
+
             // Cek kondisi menang jika HP musuh jadi 0 karena update Tasker
+            const attackButton = document.getElementById('attackButton'); // Perlu referensi button lagi
             if (currentEnemyHP <= 0) {
                 if (gameStatusEl) gameStatusEl.textContent = "Musuh dikalahkan oleh intervensi Tasker! KAMU MENANG!";
-                document.getElementById('attackButton').disabled = true;
+                 if (attackButton) attackButton.disabled = true;
                 logToPwaDebug("Musuh dikalahkan (HP <= 0) setelah update dari Tasker.");
             } else {
-                document.getElementById('attackButton').disabled = false;
+                 if (attackButton) attackButton.disabled = false; // Aktifkan lagi jika HP > 0
             }
         } else {
             logToPwaDebug(`Nilai enemyHP dari Tasker tidak valid: "${values.enemyHP}"`);
         }
     }
 };
+// =============================================================
+// AKHIR PERUBAHAN Deklarasi fungsi autoToolsUpdateValues
+// =============================================================
 
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -94,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 1. Menerima Data Awal dari Tasker (via <meta> tag AutoTools) ---
     // Variabel ini akan otomatis ada di scope global (window) jika didefinisikan di <meta>
     // dan diisi nilainya oleh Tasker di konfigurasi "Screen Variables".
-    
+
     // Pesan Awal
     if (typeof window.initialMessage !== 'undefined') {
         logToPwaDebug(`initialMessage dari Tasker: "${window.initialMessage}"`);
@@ -120,6 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // HP Musuh Awal
     if (typeof window.enemyHP !== 'undefined') {
         currentEnemyHP = parseInt(window.enemyHP, 10);
+        if (isNaN(currentEnemyHP)) currentEnemyHP = 100; // Fallback jika parsing gagal
         currentEnemyMaxHP = currentEnemyHP; // Asumsikan HP awal adalah MaxHP
         logToPwaDebug(`enemyHP dari Tasker: ${currentEnemyHP}`);
     } else {
@@ -127,6 +141,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentEnemyMaxHP = 100;
         logToPwaDebug("window.enemyHP TIDAK DITEMUKAN. Menggunakan default: " + currentEnemyHP);
     }
+    // Pastikan nilai awal ditampilkan
     if (gameEnemyHPEl) gameEnemyHPEl.textContent = currentEnemyHP;
     if (gameEnemyMaxHPEl) gameEnemyMaxHPEl.textContent = currentEnemyMaxHP;
 
@@ -134,6 +149,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ATK Pemain
     if (typeof window.playerATK !== 'undefined') {
         currentPlayerATK = parseInt(window.playerATK, 10);
+         if (isNaN(currentPlayerATK)) currentPlayerATK = 10; // Fallback
         logToPwaDebug(`playerATK dari Tasker: ${currentPlayerATK}`);
     } else {
         currentPlayerATK = 10; // Default
@@ -144,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Nilai Update Realtime Awal (dari meta tag, sebelum ada update dari Tasker)
      if (typeof window.realtimeUpdateValue !== 'undefined') {
         logToPwaDebug(`realtimeUpdateValue awal dari Tasker: "${window.realtimeUpdateValue}"`);
-        if (displayRealtimeUpdateEl) displayRealtimeUpdateEl.textContent = window.realtimeUpdateValue;
+        if (displayRealtimeUpdateEl) displayRealtimeUpdateEl.textContent = `Nilai awal: ${window.realtimeUpdateValue}`; // Sedikit modifikasi teks
     } else {
         logToPwaDebug("window.realtimeUpdateValue TIDAK DITEMUKAN (cek meta tag & config Tasker).");
         if (displayRealtimeUpdateEl) displayRealtimeUpdateEl.textContent = "realtimeUpdateValue tidak diset awal.";
@@ -182,6 +198,15 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
         logToPwaDebug("ERROR: attackButton tidak ditemukan!");
     }
+
+    // Pastikan status awal game benar
+    if (gameStatusEl && currentEnemyHP > 0) {
+        gameStatusEl.textContent = "Status: Mulai pertarungan!";
+    } else if (gameStatusEl && currentEnemyHP <= 0) {
+         gameStatusEl.textContent = "Musuh sudah kalah saat load!";
+         if (attackButton) attackButton.disabled = true;
+    }
+
 });
 
 logToPwaDebug("app.js (Meta Variables & Updater) parsing finished.");
