@@ -2,82 +2,87 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>AT Meta PWA</title> <link rel="stylesheet" href="css/style.css">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tes Update Sederhana</title>
 
-    <meta name="autotoolswebscreen" 
-          type="variablejs" 
-          id="initialMessage" 
-          label="Pesan Awal" 
-          description="Pesan yang dikirim dari Tasker saat PWA dimuat." 
-          hint="Contoh: Selamat datang!" 
-          defaultValue="Tidak ada pesan awal dari Tasker (default meta)." />
+    <meta name="autotoolswebscreen"
+          type="variablejs"
+          id="pesanUpdate"
+          label="Pesan untuk diupdate"
+          description="Nilai ini akan diupdate oleh Tasker."
+          defaultValue="Menunggu pesan dari Tasker..." />
 
-    <meta name="autotoolswebscreen" 
-          type="variablejs" 
-          id="playerName" 
-          label="Nama Pemain" 
-          description="Nama pemain yang dikirim dari Tasker." 
-          hint="Contoh: Kyuris" 
-          defaultValue="Pemain Tamu" />
-
-    <meta name="autotoolswebscreen" 
-          type="variablejs" 
-          id="enemyHP" 
-          label="HP Musuh Awal" 
-          description="HP awal musuh untuk game RPG sederhana."
-          subtype="number" 
-          defaultValue="100" />
-    
-    <meta name="autotoolswebscreen" 
-          type="variablejs" 
-          id="playerATK" 
-          label="ATK Pemain" 
-          description="Attack power pemain."
-          subtype="number" 
-          defaultValue="10" />
-
-    <meta name="autotoolswebscreen" 
-          type="variablejs" 
-          id="realtimeUpdateValue" 
-          label="Nilai Update Realtime" 
-          description="Nilai ini akan diupdate oleh Tasker secara real-time." 
-          defaultValue="Belum ada update." />
-
+    <style>
+        body { font-family: sans-serif; padding: 20px; background-color: #f0f0f0; }
+        #container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+        #areaUpdate { margin-top: 15px; padding: 10px; border: 1px solid #ccc; background-color: #e9e9e9; min-height: 30px; }
+        .log-area { margin-top:20px; font-size:0.8em; color: #555; max-height:150px; overflow-y:auto; border-top:1px dashed #ccc; padding-top:10px;}
+    </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Game RPG Sederhana (AutoTools)</h1>
-
-        <div class="section" id="initial-data-section">
-            <h2>Data Awal dari Tasker</h2>
-            <p>Pesan: <strong id="displayInitialMessage"></strong></p>
-            <p>Pemain: <strong id="displayPlayerName"></strong></p>
-        </div>
-
-        <div class="section" id="game-section">
-            <h2>Pertarungan</h2>
-            <div class="unit-display">
-                <p>Pemain (<span id="gamePlayerName"></span>) ATK: <span id="gamePlayerATK"></span></p>
-            </div>
-            <div class="unit-display enemy">
-                <p>Musuh HP: <span id="gameEnemyHP">100</span> / <span id="gameEnemyMaxHP">100</span></p>
-            </div>
-            <button id="attackButton">Serang Musuh!</button>
-            <p id="gameStatus">Status: Mulai pertarungan!</p>
-        </div>
-        
-        <div class="section" id="realtime-update-section">
-            <h2>Update Real-time dari Tasker</h2>
-            <p id="displayRealtimeUpdate">Belum ada update dari Tasker.</p>
-        </div>
-
-        <div id="debugArea">
-            <p class="debug-title">--- LOG PWA ---</p>
-            <pre id="debugOutput"></pre>
+    <div id="container">
+        <h1>Tes Update Real-time AutoTools</h1>
+        <p>Nilai awal dari meta 'pesanUpdate': <strong id="nilaiAwal"></strong></p>
+        <p>Area yang akan diupdate:</p>
+        <div id="areaUpdate">Menunggu pesan dari Tasker...</div>
+        <div class="log-area">
+            <strong>Log PWA:</strong><br>
+            <pre id="logOutput"></pre>
         </div>
     </div>
 
-    <script src="js/app.js"></script>
+    <script type="text/javascript">
+        // Fungsi log sederhana
+        function logPesan(pesan) {
+            const logEl = document.getElementById('logOutput');
+            if (logEl) {
+                const waktu = new Date().toLocaleTimeString('id-ID', { hour12: false });
+                logEl.textContent += `[${waktu}] ${pesan}\n`;
+                logEl.scrollTop = logEl.scrollHeight; // Auto scroll
+            }
+            console.log(`[Tes Update PWA - ${new Date().toLocaleTimeString('id-ID', { hour12: false })}] ${pesan}`);
+        }
+
+        logPesan("Halaman dimuat.");
+
+        // Menampilkan nilai awal dari meta tag saat halaman pertama kali dimuat
+        document.addEventListener('DOMContentLoaded', function() {
+            logPesan("DOMContentLoaded event fired.");
+            const nilaiAwalEl = document.getElementById('nilaiAwal');
+            const areaUpdateEl = document.getElementById('areaUpdate');
+
+            if (typeof window.pesanUpdate !== 'undefined') {
+                logPesan(`Nilai awal 'pesanUpdate' dari meta: "${window.pesanUpdate}"`);
+                if (nilaiAwalEl) nilaiAwalEl.textContent = window.pesanUpdate;
+                // Anda bisa juga set areaUpdateEl dengan nilai awal jika mau
+                // if (areaUpdateEl) areaUpdateEl.textContent = window.pesanUpdate;
+            } else {
+                logPesan("'pesanUpdate' tidak ditemukan sebagai variabel global awal (cek meta tag).");
+                if (nilaiAwalEl) nilaiAwalEl.textContent = "Variabel 'pesanUpdate' tidak diset di meta.";
+            }
+        });
+
+        // Fungsi yang akan dipanggil AutoTools untuk update
+        // Dideklarasikan sebagai variabel global, sama seperti contoh demo AutoTools
+        var autoToolsUpdateValues = function(values) {
+            logPesan("Fungsi 'autoToolsUpdateValues' dipanggil oleh Tasker.");
+            logPesan("Data yang diterima (values): " + JSON.stringify(values));
+
+            const areaUpdateEl = document.getElementById('areaUpdate');
+
+            if (values && typeof values.pesanUpdate !== 'undefined') {
+                logPesan(`Nilai 'pesanUpdate' baru dari Tasker: "${values.pesanUpdate}"`);
+                if (areaUpdateEl) {
+                    areaUpdateEl.textContent = values.pesanUpdate;
+                } else {
+                    logPesan("ERROR: Elemen 'areaUpdate' tidak ditemukan untuk diupdate.");
+                }
+            } else {
+                logPesan("Objek 'values' tidak ada atau tidak berisi 'pesanUpdate'.");
+            }
+        };
+
+        logPesan("Skrip selesai dieksekusi. Fungsi 'autoToolsUpdateValues' sudah dideklarasikan.");
+    </script>
 </body>
 </html>
