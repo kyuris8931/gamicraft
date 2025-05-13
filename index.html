@@ -3,219 +3,191 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inline Turn-Based Battle V2</title>
+    <title>Gambar Lokal dari Tasker ke Netlify PWA</title>
 
-    <meta name="autotoolswebscreen" type="variablejs" id="hpPemain" label="HP Pemain" description="HP Pemain Saat Ini" defaultValue="100" subtype="number" />
-    <meta name="autotoolswebscreen" type="variablejs" id="hpMusuh" label="HP Musuh" description="HP Musuh Saat Ini" defaultValue="%hpMusuh" subtype="number" />
-    <meta name="autotoolswebscreen" type="variablejs" id="pesanStatus" label="Pesan Status" description="Pesan status pertarungan" defaultValue="Pertarungan dimulai!" />
-    <meta name="autotoolswebscreen" type="variablejs" id="giliran" label="Giliran" description="Siapa yang giliran (pemain/musuh)" defaultValue="pemain" />
+    <meta name="autotoolswebscreen"
+          type="variablejs"
+          id="dataGambarBase64"
+          label="Data Gambar (Base64)"
+          description="String Base64 dari gambar lokal."
+          defaultValue="" />
+    <meta name="autotoolswebscreen"
+          type="variablejs"
+          id="tipeMimeGambar"
+          label="Tipe MIME Gambar"
+          description="Contoh: image/jpeg, image/png."
+          defaultValue="image/png" />
+    <meta name="autotoolswebscreen"
+          type="variablejs"
+          id="infoStatusGambar"
+          label="Info Status"
+          description="Pesan status dari Tasker atau PWA."
+          defaultValue="Menunggu instruksi dari Tasker..." />
 
     <style>
-        body { font-family: Arial, sans-serif; margin: 0; padding: 15px; background-color: #2c3e50; color: #ecf0f1; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-        #battleBox { background-color: #34495e; padding: 20px; border-radius: 10px; box-shadow: 0 0 15px rgba(0,0,0,0.5); text-align: center; width: 90%; max-width: 400px; }
-        .unit { margin-bottom: 15px; padding: 10px; background-color: #4a627a; border-radius: 5px; }
-        .unit h3 { margin-top: 0; color: #e67e22; }
-        .hp-bar-container { background-color: #2c3e50; border-radius: 5px; padding: 3px; margin-top: 5px; }
-        .hp-bar { background-color: #2ecc71; height: 20px; border-radius: 3px; width: 100%; transition: width 0.3s ease-in-out; }
-        .enemy .hp-bar { background-color: #e74c3c; }
-        button { background-color: #3498db; color: white; border: none; padding: 10px 15px; font-size: 1em; border-radius: 5px; cursor: pointer; margin-top: 10px; transition: background-color 0.2s; }
-        button:hover { background-color: #2980b9; }
-        button:disabled { background-color: #7f8c8d; cursor: not-allowed; }
-        #statusArea { margin-top: 15px; font-style: italic; color: #bdc3c7; min-height: 20px; }
-        .log-area { font-size:0.7em; color: #95a5a6; max-height:100px; overflow-y:auto; border-top:1px solid #4a627a; padding-top:8px; margin-top: 15px; text-align: left;}
-        .log-area pre { margin: 0; white-space: pre-wrap; word-break: break-all; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 90vh;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            width: 90%;
+            max-width: 500px;
+            text-align: center;
+        }
+        h1 {
+            color: #1877f2; /* Biru Facebook */
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+        #placeholderGambar {
+            width: 100%;
+            max-width: 300px; /* Batasi lebar maksimum gambar */
+            min-height: 150px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+            border: 3px dashed #ccd0d5; /* Abu-abu Facebook */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #e9ebee; /* Latar abu-abu sangat muda */
+            color: #606770; /* Teks abu-abu */
+            font-style: italic;
+            border-radius: 8px;
+            object-fit: contain; /* Agar gambar tidak terdistorsi */
+        }
+        #statusPesan {
+            margin-top: 15px;
+            color: #606770;
+            font-size: 0.95em;
+            min-height: 20px;
+        }
+        .log-box {
+            margin-top: 25px;
+            padding: 10px;
+            background-color: #f7f7f7;
+            border: 1px solid #dddfe2;
+            border-radius: 6px;
+            text-align: left;
+            font-size: 0.8em;
+            max-height: 150px;
+            overflow-y: auto;
+            color: #333;
+        }
+        .log-box strong {
+            color: #1877f2;
+        }
+        .log-box pre {
+            margin: 0;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
     </style>
 </head>
 <body>
-    <div id="battleBox">
-        <h2>Turn-Based Battle V2</h2>
+    <div class="container">
+        <h1>Tampilan Gambar Lokal</h1>
+        <img id="placeholderGambar" src="" alt="Area Gambar" />
+        <p id="statusPesan">Menunggu instruksi dari Tasker...</p>
 
-        <div class="unit player">
-            <h3>Pemain</h3>
-            <p>HP: <span id="hpPemainVal">100</span> / <span id="hpPemainMax">100</span></p>
-            <div class="hp-bar-container"><div class="hp-bar" id="hpPemainBar"></div></div>
-        </div>
-
-        <div class="unit enemy">
-            <h3>Musuh</h3>
-            <p>HP: <span id="hpMusuhVal">80</span> / <span id="hpMusuhMax">80</span></p>
-            <div class="hp-bar-container"><div class="hp-bar" id="hpMusuhBar"></div></div>
-        </div>
-
-        <button id="tombolSerang" onclick="serangMusuh()">Serang Musuh!</button>
-        <div id="statusArea">Pertarungan dimulai!</div>
-
-        <div class="log-area">
-            <strong>Log PWA:</strong><br>
-            <pre id="logOutput"></pre>
+        <div class="log-box">
+            <strong>Log PWA:</strong>
+            <pre id="logOutputPWA"></pre>
         </div>
     </div>
 
     <script type="text/javascript">
-        let pemainMaxHP, musuhMaxHP;
-        let hpPemainSekarang, hpMusuhSekarang;
-        let giliranSekarang;
+        // Elemen global
+        let elGambar, elStatus, elLog;
 
-        // Fungsi log internal, JANGAN panggil ini langsung dari Tasker Inject
-        function _logPesanInternal(pesan) {
-            const logEl = document.getElementById('logOutput');
-            if (logEl) {
-                const waktu = new Date().toLocaleTimeString('id-ID', { hour12: false });
-                logEl.textContent += `[${waktu}] ${pesan}\n`;
-                logEl.scrollTop = logEl.scrollHeight;
+        function catatLog(pesan) {
+            if (elLog) {
+                const waktu = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                elLog.textContent += `[${waktu}] ${pesan}\n`;
+                elLog.scrollTop = elLog.scrollHeight; // Auto scroll ke bawah
             }
-            console.log(`[InlineBattleV2 - ${new Date().toLocaleTimeString('id-ID', { hour12: false })}] ${pesan}`);
-        }
-
-        // Fungsi log yang AMAN untuk dipanggil dari Tasker Inject
-        window.logDariTasker = function(pesan) {
-            _logPesanInternal(`TASKER INJECT: ${pesan}`);
-        };
-        // Fungsi lain yang bisa dipanggil Tasker
-        window.tambahHpPemainDariTasker = function(jumlah) {
-            if (typeof hpPemainSekarang === 'number' && typeof pemainMaxHP === 'number' && typeof jumlah === 'number') {
-                hpPemainSekarang = Math.min(pemainMaxHP, hpPemainSekarang + jumlah);
-                updateTampilanHP('Pemain', hpPemainSekarang, pemainMaxHP);
-                updateStatus(`Pemain memulihkan ${jumlah} HP dari Tasker!`);
-                _logPesanInternal(`HP Pemain ditambah ${jumlah} via Tasker menjadi ${hpPemainSekarang}.`);
-                cekKondisiAkhir();
-                updateTombolSerang();
-            } else {
-                _logPesanInternal(`Gagal tambahHpPemainDariTasker: HP atau jumlah tidak valid. HP: ${hpPemainSekarang}, Max: ${pemainMaxHP}, Jumlah: ${jumlah}`);
-            }
-        };
-
-
-        function updateTampilanHP(unit, hpSekarang, hpMax) {
-            const valEl = document.getElementById(`hp${unit}Val`);
-            const barEl = document.getElementById(`hp${unit}Bar`);
-            const maxEl = document.getElementById(`hp${unit}Max`);
-
-            if (valEl) valEl.textContent = hpSekarang;
-            if (maxEl) maxEl.textContent = hpMax;
-            if (barEl) {
-                const persen = hpMax > 0 ? (hpSekarang / hpMax) * 100 : 0;
-                barEl.style.width = `${Math.max(0, persen)}%`;
-            }
-        }
-
-        function updateStatus(pesan) {
-            const statusEl = document.getElementById('statusArea');
-            if (statusEl) statusEl.textContent = pesan;
-            _logPesanInternal(`Status: ${pesan}`);
-        }
-
-        function updateTombolSerang() {
-            const tombol = document.getElementById('tombolSerang');
-            if (tombol) {
-                tombol.disabled = (giliranSekarang !== 'pemain' || hpPemainSekarang <= 0 || hpMusuhSekarang <= 0);
-            }
+            console.log(`[PWA Gambar Lokal] ${pesan}`);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            _logPesanInternal("DOMContentLoaded: Menginisialisasi nilai awal.");
+            elGambar = document.getElementById('placeholderGambar');
+            elStatus = document.getElementById('statusPesan');
+            elLog = document.getElementById('logOutputPWA');
 
-            pemainMaxHP = parseInt(window.hpPemain) || 100;
-            hpPemainSekarang = pemainMaxHP;
-            musuhMaxHP = parseInt(window.hpMusuh) || 80;
-            hpMusuhSekarang = musuhMaxHP;
-            giliranSekarang = window.giliran || 'pemain';
+            catatLog("Halaman PWA siap (DOMContentLoaded).");
 
-            updateTampilanHP('Pemain', hpPemainSekarang, pemainMaxHP);
-            updateTampilanHP('Musuh', hpMusuhSekarang, musuhMaxHP);
-            updateStatus(window.pesanStatus || "Pertarungan dimulai!");
-            updateTombolSerang();
+            // Menampilkan status awal dari meta tag (jika ada)
+            if (typeof window.infoStatusGambar !== 'undefined') {
+                elStatus.textContent = window.infoStatusGambar;
+                catatLog(`Status awal dari meta: "${window.infoStatusGambar}"`);
+            }
 
-            _logPesanInternal(`Pemain HP Awal: ${hpPemainSekarang}/${pemainMaxHP}, Musuh HP Awal: ${hpMusuhSekarang}/${musuhMaxHP}, Giliran: ${giliranSekarang}`);
+            // Menampilkan gambar awal dari meta jika ada (biasanya tidak untuk base64 besar)
+            if (window.dataGambarBase64 && window.dataGambarBase64.length > 10 && window.tipeMimeGambar) { // Cek panjang > 10 untuk validitas kasar
+                catatLog(`Mencoba memuat gambar awal dari meta. Tipe: ${window.tipeMimeGambar}, Data (awal): ${window.dataGambarBase64.substring(0,30)}...`);
+                elGambar.src = `data:${window.tipeMimeGambar};base64,${window.dataGambarBase64}`;
+                elGambar.alt = "Gambar dimuat dari meta awal";
+                elStatus.textContent = "Gambar awal dimuat dari meta.";
+            } else {
+                elGambar.alt = "Belum ada gambar"; // Teks jika src kosong
+                catatLog("Tidak ada gambar awal dari meta atau data tidak valid.");
+            }
         });
 
+        // Fungsi ini akan dipanggil oleh AutoTools Web Screen untuk mengupdate nilai
         var autoToolsUpdateValues = function(values) {
-            _logPesanInternal("autoToolsUpdateValues dipanggil. Data: " + JSON.stringify(values));
-            let butuhUpdateUIBattle = false;
+            catatLog("autoToolsUpdateValues dipanggil oleh Tasker.");
+            catatLog("Data diterima: " + JSON.stringify(values));
 
-            if (typeof values.hpPemain !== 'undefined') {
-                let hpDariTasker = parseInt(values.hpPemain);
-                if (isNaN(hpDariTasker)) hpDariTasker = hpPemainSekarang; // Jaga nilai jika invalid
-                if (hpDariTasker !== hpPemainSekarang) { // Hanya update jika berbeda
-                    hpPemainSekarang = hpDariTasker;
-                    _logPesanInternal(`HP Pemain diupdate Tasker menjadi: ${hpPemainSekarang}`);
-                    butuhUpdateUIBattle = true;
-                } else {
-                     _logPesanInternal(`HP Pemain dari Tasker (${hpDariTasker}) sama, tidak diubah.`);
-                }
-            }
-            if (typeof values.hpMusuh !== 'undefined') {
-                let hpDariTasker = parseInt(values.hpMusuh);
-                if (isNaN(hpDariTasker)) hpDariTasker = hpMusuhSekarang; // Jaga nilai jika invalid
-                if (hpDariTasker !== hpMusuhSekarang) { // Hanya update jika berbeda
-                    hpMusuhSekarang = hpDariTasker;
-                    _logPesanInternal(`HP Musuh diupdate Tasker menjadi: ${hpMusuhSekarang}`);
-                    butuhUpdateUIBattle = true;
-                } else {
-                    _logPesanInternal(`HP Musuh dari Tasker (${hpDariTasker}) sama, tidak diubah.`);
-                }
-            }
-            if (typeof values.pesanStatus !== 'undefined') {
-                // Pesan status selalu update jika dikirim
-                updateStatus(values.pesanStatus);
-            }
-            if (typeof values.giliran !== 'undefined') {
-                if (values.giliran !== giliranSekarang) {
-                    giliranSekarang = values.giliran;
-                    _logPesanInternal(`Giliran diupdate menjadi: ${giliranSekarang}`);
-                    butuhUpdateUIBattle = true;
-                } else {
-                     _logPesanInternal(`Giliran dari Tasker (${values.giliran}) sama, tidak diubah.`);
-                }
+            let statusTelahDiupdate = false;
+
+            // Update status pesan jika ada
+            if (typeof values.infoStatusGambar !== 'undefined') {
+                elStatus.textContent = values.infoStatusGambar;
+                catatLog(`Info status diupdate menjadi: "${values.infoStatusGambar}"`);
+                statusTelahDiupdate = true;
             }
 
-            if (butuhUpdateUIBattle) {
-                // Panggil update UI utama setelah semua potensi perubahan state
-                updateTampilanHP('Pemain', hpPemainSekarang, pemainMaxHP);
-                updateTampilanHP('Musuh', hpMusuhSekarang, musuhMaxHP);
-                updateTombolSerang();
-                cekKondisiAkhir();
+            // Update gambar jika data Base64 dan tipe MIME ada
+            if (typeof values.dataGambarBase64 !== 'undefined' && typeof values.tipeMimeGambar !== 'undefined') {
+                const stringBase64 = values.dataGambarBase64;
+                const mimeTipe = values.tipeMimeGambar;
+
+                if (elGambar) {
+                    if (stringBase64 && stringBase64.length > 10 && mimeTipe) { // Cek panjang > 10 untuk validitas kasar
+                        catatLog(`Mengupdate gambar. Tipe: ${mimeTipe}, Data (awal): ${stringBase64.substring(0,30)}...`);
+                        elGambar.src = `data:${mimeTipe};base64,${stringBase64}`;
+                        elGambar.alt = "Gambar dari Tasker";
+                        if (!statusTelahDiupdate) { // Hanya update status jika belum diupdate oleh infoStatusGambar
+                            elStatus.textContent = "Gambar berhasil diperbarui!";
+                        }
+                    } else {
+                        catatLog("Data Base64 atau tipe MIME tidak valid/kosong. Gambar tidak diubah atau dikosongkan.");
+                        elGambar.src = ""; // Kosongkan jika data tidak valid
+                        elGambar.alt = "Gagal memuat gambar dari Tasker";
+                        if (!statusTelahDiupdate) {
+                            elStatus.textContent = "Gagal memuat gambar: data tidak valid.";
+                        }
+                    }
+                } else {
+                    catatLog("Elemen <img> 'placeholderGambar' tidak ditemukan di DOM.");
+                }
+            } else {
+                catatLog("Tidak ada 'dataGambarBase64' atau 'tipeMimeGambar' dalam data update.");
             }
         };
 
-        function serangMusuh() {
-            if (giliranSekarang !== 'pemain' || hpPemainSekarang <= 0 || hpMusuhSekarang <= 0) return;
-
-            _logPesanInternal("Pemain menyerang musuh!");
-            const damage = Math.floor(Math.random() * 10) + 15;
-            hpMusuhSekarang = Math.max(0, hpMusuhSekarang - damage);
-            updateTampilanHP('Musuh', hpMusuhSekarang, musuhMaxHP);
-            updateStatus(`Pemain menyerang! Musuh menerima ${damage} damage.`);
-
-            if (cekKondisiAkhir()) return;
-
-            giliranSekarang = 'musuh_bersiap';
-            updateTombolSerang();
-            // updateStatus("Musuh bersiap..."); // Biarkan Tasker yang set status giliran musuh
-
-            // Beri tahu Tasker (jika AutoTools.sendCommand tersedia dan dikonfigurasi)
-            if (window.AutoTools && typeof window.AutoTools.sendCommand === 'function') {
-                 window.AutoTools.sendCommand(`giliranSelesai:hpPemain=${hpPemainSekarang}:hpMusuh=${hpMusuhSekarang}`, "battleEvent", false);
-                 _logPesanInternal("Mengirim command 'giliranSelesai' ke Tasker.");
-            }
-        }
-
-        function cekKondisiAkhir() {
-            if (hpMusuhSekarang <= 0) {
-                updateStatus("Musuh dikalahkan! PEMAIN MENANG!");
-                giliranSekarang = 'selesai';
-                updateTombolSerang();
-                return true;
-            }
-            if (hpPemainSekarang <= 0) {
-                updateStatus("Pemain dikalahkan! MUSUH MENANG!");
-                giliranSekarang = 'selesai';
-                updateTombolSerang();
-                return true;
-            }
-            return false;
-        }
-        _logPesanInternal("Skrip InlineBattleV2 selesai. Fungsi global siap.");
+        catatLog("Skrip PWA selesai dimuat. Menunggu interaksi Tasker.");
     </script>
 </body>
 </html>
