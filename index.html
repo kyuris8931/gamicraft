@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inline Turn-Based Battle Test</title>
+    <title>Inline Turn-Based Battle V2</title>
 
     <meta name="autotoolswebscreen" type="variablejs" id="hpPemain" label="HP Pemain" description="HP Pemain Saat Ini" defaultValue="100" subtype="number" />
     <meta name="autotoolswebscreen" type="variablejs" id="hpMusuh" label="HP Musuh" description="HP Musuh Saat Ini" defaultValue="80" subtype="number" />
@@ -17,7 +17,7 @@
         .unit h3 { margin-top: 0; color: #e67e22; }
         .hp-bar-container { background-color: #2c3e50; border-radius: 5px; padding: 3px; margin-top: 5px; }
         .hp-bar { background-color: #2ecc71; height: 20px; border-radius: 3px; width: 100%; transition: width 0.3s ease-in-out; }
-        .enemy .hp-bar { background-color: #e74c3c; } /* Merah untuk musuh */
+        .enemy .hp-bar { background-color: #e74c3c; }
         button { background-color: #3498db; color: white; border: none; padding: 10px 15px; font-size: 1em; border-radius: 5px; cursor: pointer; margin-top: 10px; transition: background-color 0.2s; }
         button:hover { background-color: #2980b9; }
         button:disabled { background-color: #7f8c8d; cursor: not-allowed; }
@@ -28,7 +28,7 @@
 </head>
 <body>
     <div id="battleBox">
-        <h2>Turn-Based Battle</h2>
+        <h2>Turn-Based Battle V2</h2>
 
         <div class="unit player">
             <h3>Pemain</h3>
@@ -52,21 +52,39 @@
     </div>
 
     <script type="text/javascript">
-        // Variabel global untuk menyimpan Max HP (diambil dari nilai awal)
         let pemainMaxHP, musuhMaxHP;
         let hpPemainSekarang, hpMusuhSekarang;
         let giliranSekarang;
 
-        // Fungsi log sederhana
-        function logPesan(pesan) {
+        // Fungsi log internal, JANGAN panggil ini langsung dari Tasker Inject
+        function _logPesanInternal(pesan) {
             const logEl = document.getElementById('logOutput');
             if (logEl) {
                 const waktu = new Date().toLocaleTimeString('id-ID', { hour12: false });
                 logEl.textContent += `[${waktu}] ${pesan}\n`;
                 logEl.scrollTop = logEl.scrollHeight;
             }
-            console.log(`[InlineBattle - ${new Date().toLocaleTimeString('id-ID', { hour12: false })}] ${pesan}`);
+            console.log(`[InlineBattleV2 - ${new Date().toLocaleTimeString('id-ID', { hour12: false })}] ${pesan}`);
         }
+
+        // Fungsi log yang AMAN untuk dipanggil dari Tasker Inject
+        window.logDariTasker = function(pesan) {
+            _logPesanInternal(`TASKER INJECT: ${pesan}`);
+        };
+        // Fungsi lain yang bisa dipanggil Tasker
+        window.tambahHpPemainDariTasker = function(jumlah) {
+            if (typeof hpPemainSekarang === 'number' && typeof pemainMaxHP === 'number' && typeof jumlah === 'number') {
+                hpPemainSekarang = Math.min(pemainMaxHP, hpPemainSekarang + jumlah);
+                updateTampilanHP('Pemain', hpPemainSekarang, pemainMaxHP);
+                updateStatus(`Pemain memulihkan ${jumlah} HP dari Tasker!`);
+                _logPesanInternal(`HP Pemain ditambah ${jumlah} via Tasker menjadi ${hpPemainSekarang}.`);
+                cekKondisiAkhir();
+                updateTombolSerang();
+            } else {
+                _logPesanInternal(`Gagal tambahHpPemainDariTasker: HP atau jumlah tidak valid. HP: ${hpPemainSekarang}, Max: ${pemainMaxHP}, Jumlah: ${jumlah}`);
+            }
+        };
+
 
         function updateTampilanHP(unit, hpSekarang, hpMax) {
             const valEl = document.getElementById(`hp${unit}Val`);
@@ -74,7 +92,7 @@
             const maxEl = document.getElementById(`hp${unit}Max`);
 
             if (valEl) valEl.textContent = hpSekarang;
-            if (maxEl) maxEl.textContent = hpMax; // Update Max HP jika berubah
+            if (maxEl) maxEl.textContent = hpMax;
             if (barEl) {
                 const persen = hpMax > 0 ? (hpSekarang / hpMax) * 100 : 0;
                 barEl.style.width = `${Math.max(0, persen)}%`;
@@ -84,7 +102,7 @@
         function updateStatus(pesan) {
             const statusEl = document.getElementById('statusArea');
             if (statusEl) statusEl.textContent = pesan;
-            logPesan(`Status: ${pesan}`);
+            _logPesanInternal(`Status: ${pesan}`);
         }
 
         function updateTombolSerang() {
@@ -94,17 +112,13 @@
             }
         }
 
-        // Fungsi yang dipanggil saat halaman pertama kali dimuat
         document.addEventListener('DOMContentLoaded', function() {
-            logPesan("DOMContentLoaded: Menginisialisasi nilai awal.");
+            _logPesanInternal("DOMContentLoaded: Menginisialisasi nilai awal.");
 
-            // Inisialisasi dari variabel global yang diisi oleh meta tag AutoTools
             pemainMaxHP = parseInt(window.hpPemain) || 100;
             hpPemainSekarang = pemainMaxHP;
-
             musuhMaxHP = parseInt(window.hpMusuh) || 80;
             hpMusuhSekarang = musuhMaxHP;
-
             giliranSekarang = window.giliran || 'pemain';
 
             updateTampilanHP('Pemain', hpPemainSekarang, pemainMaxHP);
@@ -112,75 +126,77 @@
             updateStatus(window.pesanStatus || "Pertarungan dimulai!");
             updateTombolSerang();
 
-            logPesan(`Pemain HP Awal: ${hpPemainSekarang}/${pemainMaxHP}, Musuh HP Awal: ${hpMusuhSekarang}/${musuhMaxHP}, Giliran: ${giliranSekarang}`);
+            _logPesanInternal(`Pemain HP Awal: ${hpPemainSekarang}/${pemainMaxHP}, Musuh HP Awal: ${hpMusuhSekarang}/${musuhMaxHP}, Giliran: ${giliranSekarang}`);
         });
 
-        // Fungsi yang akan dipanggil AutoTools untuk update
         var autoToolsUpdateValues = function(values) {
-            logPesan("autoToolsUpdateValues dipanggil. Data: " + JSON.stringify(values));
-            let butuhUpdateTombol = false;
+            _logPesanInternal("autoToolsUpdateValues dipanggil. Data: " + JSON.stringify(values));
+            let butuhUpdateUIBattle = false;
 
             if (typeof values.hpPemain !== 'undefined') {
-                hpPemainSekarang = parseInt(values.hpPemain);
-                if (isNaN(hpPemainSekarang)) hpPemainSekarang = 0;
-                // Jika HP pemain diupdate, Max HP mungkin juga perlu dipertimbangkan
-                // Untuk contoh ini, kita asumsikan MaxHP tidak berubah via update ini kecuali ada variabel khusus
-                updateTampilanHP('Pemain', hpPemainSekarang, pemainMaxHP);
-                logPesan(`HP Pemain diupdate menjadi: ${hpPemainSekarang}`);
-                butuhUpdateTombol = true;
+                let hpDariTasker = parseInt(values.hpPemain);
+                if (isNaN(hpDariTasker)) hpDariTasker = hpPemainSekarang; // Jaga nilai jika invalid
+                if (hpDariTasker !== hpPemainSekarang) { // Hanya update jika berbeda
+                    hpPemainSekarang = hpDariTasker;
+                    _logPesanInternal(`HP Pemain diupdate Tasker menjadi: ${hpPemainSekarang}`);
+                    butuhUpdateUIBattle = true;
+                } else {
+                     _logPesanInternal(`HP Pemain dari Tasker (${hpDariTasker}) sama, tidak diubah.`);
+                }
             }
             if (typeof values.hpMusuh !== 'undefined') {
-                hpMusuhSekarang = parseInt(values.hpMusuh);
-                if (isNaN(hpMusuhSekarang)) hpMusuhSekarang = 0;
-                updateTampilanHP('Musuh', hpMusuhSekarang, musuhMaxHP);
-                logPesan(`HP Musuh diupdate menjadi: ${hpMusuhSekarang}`);
-                butuhUpdateTombol = true;
+                let hpDariTasker = parseInt(values.hpMusuh);
+                if (isNaN(hpDariTasker)) hpDariTasker = hpMusuhSekarang; // Jaga nilai jika invalid
+                if (hpDariTasker !== hpMusuhSekarang) { // Hanya update jika berbeda
+                    hpMusuhSekarang = hpDariTasker;
+                    _logPesanInternal(`HP Musuh diupdate Tasker menjadi: ${hpMusuhSekarang}`);
+                    butuhUpdateUIBattle = true;
+                } else {
+                    _logPesanInternal(`HP Musuh dari Tasker (${hpDariTasker}) sama, tidak diubah.`);
+                }
             }
             if (typeof values.pesanStatus !== 'undefined') {
+                // Pesan status selalu update jika dikirim
                 updateStatus(values.pesanStatus);
             }
             if (typeof values.giliran !== 'undefined') {
-                giliranSekarang = values.giliran;
-                logPesan(`Giliran diupdate menjadi: ${giliranSekarang}`);
-                butuhUpdateTombol = true; // Giliran berubah, tombol serang mungkin perlu di-enable/disable
+                if (values.giliran !== giliranSekarang) {
+                    giliranSekarang = values.giliran;
+                    _logPesanInternal(`Giliran diupdate menjadi: ${giliranSekarang}`);
+                    butuhUpdateUIBattle = true;
+                } else {
+                     _logPesanInternal(`Giliran dari Tasker (${values.giliran}) sama, tidak diubah.`);
+                }
             }
 
-            if (butuhUpdateTombol) {
+            if (butuhUpdateUIBattle) {
+                // Panggil update UI utama setelah semua potensi perubahan state
+                updateTampilanHP('Pemain', hpPemainSekarang, pemainMaxHP);
+                updateTampilanHP('Musuh', hpMusuhSekarang, musuhMaxHP);
                 updateTombolSerang();
                 cekKondisiAkhir();
             }
         };
 
-        // Aksi pemain
         function serangMusuh() {
-            if (giliranSekarang !== 'pemain' || hpPemainSekarang <= 0 || hpMusuhSekarang <= 0) {
-                logPesan("Serangan tidak valid (bukan giliran pemain / salah satu unit sudah KO).");
-                return;
-            }
+            if (giliranSekarang !== 'pemain' || hpPemainSekarang <= 0 || hpMusuhSekarang <= 0) return;
 
-            logPesan("Pemain menyerang musuh!");
-            const damage = Math.floor(Math.random() * 10) + 15; // Damage acak 15-24
+            _logPesanInternal("Pemain menyerang musuh!");
+            const damage = Math.floor(Math.random() * 10) + 15;
             hpMusuhSekarang = Math.max(0, hpMusuhSekarang - damage);
             updateTampilanHP('Musuh', hpMusuhSekarang, musuhMaxHP);
             updateStatus(`Pemain menyerang! Musuh menerima ${damage} damage.`);
 
             if (cekKondisiAkhir()) return;
 
-            // Ganti giliran ke musuh (bisa di-handle Tasker atau otomatis)
-            // Untuk demo ini, kita langsung ganti giliran dan musuh "menyerang" (dikontrol Tasker)
-            giliranSekarang = 'musuh_bersiap'; // Status sementara sebelum Tasker mengambil alih
+            giliranSekarang = 'musuh_bersiap';
             updateTombolSerang();
-            updateStatus("Musuh bersiap...");
+            // updateStatus("Musuh bersiap..."); // Biarkan Tasker yang set status giliran musuh
 
-
-            // Kirim command ke Tasker bahwa giliran pemain selesai & HP musuh berubah
-            // Ini contoh, Anda perlu mengimplementasikan AutoTools.sendCommand jika file autotoolsfunctions.js disertakan
-            // Jika tidak, Tasker bisa memantau perubahan melalui Update berkala atau trigger lain
+            // Beri tahu Tasker (jika AutoTools.sendCommand tersedia dan dikonfigurasi)
             if (window.AutoTools && typeof window.AutoTools.sendCommand === 'function') {
-                 window.AutoTools.sendCommand(`pemain_selesai:hpMusuh=${hpMusuhSekarang}`, "battleEvent", false);
-                 logPesan("Mengirim command 'pemain_selesai' ke Tasker.");
-            } else {
-                logPesan("AutoTools.sendCommand tidak tersedia. Tasker perlu cara lain untuk deteksi giliran.");
+                 window.AutoTools.sendCommand(`giliranSelesai:hpPemain=${hpPemainSekarang}:hpMusuh=${hpMusuhSekarang}`, "battleEvent", false);
+                 _logPesanInternal("Mengirim command 'giliranSelesai' ke Tasker.");
             }
         }
 
@@ -199,22 +215,7 @@
             }
             return false;
         }
-
-        window.tambahHpPemainGlobal = function(jumlahTambah) {
-            if (typeof hpPemainSekarang !== 'undefined' && typeof pemainMaxHP !== 'undefined') {
-                hpPemainSekarang = Math.min(pemainMaxHP, hpPemainSekarang + jumlahTambah);
-                updateTampilanHP('Pemain', hpPemainSekarang, pemainMaxHP);
-                updateStatus(`Pemain memulihkan ${jumlahTambah} HP!`);
-                logPesan(`HP Pemain ditambah ${jumlahTambah} menjadi ${hpPemainSekarang} via fungsi global.`);
-                cekKondisiAkhir(); // Cek apakah game berakhir (misalnya jika ini revive)
-                updateTombolSerang(); // Update status tombol
-                return true; // Berhasil
-            }
-            logPesan("Gagal menambah HP: variabel HP tidak terdefinisi.");
-            return false; // Gagal
-        };
-
-        logPesan("Skrip inline_battle_test.html selesai dieksekusi. 'autoToolsUpdateValues' siap.");
+        _logPesanInternal("Skrip InlineBattleV2 selesai. Fungsi global siap.");
     </script>
 </body>
 </html>
