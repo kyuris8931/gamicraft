@@ -152,6 +152,13 @@
 
             let statusTelahDiupdate = false;
 
+            // Update status pesan jika ada
+            if (typeof values.infoStatusGambar !== 'undefined') {
+                elStatus.textContent = values.infoStatusGambar;
+                catatLog(`Info status diupdate menjadi: "${values.infoStatusGambar}"`);
+                statusTelahDiupdate = true;
+            }
+
             // Update gambar jika data Base64 dan tipe MIME ada
             if (typeof values.dataGambarBase64 !== 'undefined' && typeof values.tipeMimeGambar !== 'undefined') {
                 const stringBase64 = values.dataGambarBase64;
