@@ -200,6 +200,20 @@
             return false;
         }
 
+        window.tambahHpPemainGlobal = function(jumlahTambah) {
+            if (typeof hpPemainSekarang !== 'undefined' && typeof pemainMaxHP !== 'undefined') {
+                hpPemainSekarang = Math.min(pemainMaxHP, hpPemainSekarang + jumlahTambah);
+                updateTampilanHP('Pemain', hpPemainSekarang, pemainMaxHP);
+                updateStatus(`Pemain memulihkan ${jumlahTambah} HP!`);
+                logPesan(`HP Pemain ditambah ${jumlahTambah} menjadi ${hpPemainSekarang} via fungsi global.`);
+                cekKondisiAkhir(); // Cek apakah game berakhir (misalnya jika ini revive)
+                updateTombolSerang(); // Update status tombol
+                return true; // Berhasil
+            }
+            logPesan("Gagal menambah HP: variabel HP tidak terdefinisi.");
+            return false; // Gagal
+        };
+
         logPesan("Skrip inline_battle_test.html selesai dieksekusi. 'autoToolsUpdateValues' siap.");
     </script>
 </body>
