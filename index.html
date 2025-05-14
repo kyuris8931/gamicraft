@@ -3,387 +3,319 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>TBC PseudoPos Sederhana</title>
+    <title>TBC Teks Sederhana</title>
 
     <meta name="autotoolswebscreen" type="variablejs" id="jsonDataBattle" label="Data JSON Battle" defaultValue="{}" />
     <meta name="autotoolswebscreen" type="variablejs" id="infoGlobal" label="Info Global" defaultValue="Memuat pertarungan..." />
 
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Arial', sans-serif;
             margin: 0;
-            background-color: #34495e; /* Latar belakang gelap */
+            background-color: #2c3e50; /* Latar gelap */
             color: #ecf0f1; /* Teks terang */
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between; /* Mendorong command UI ke bawah */
+            justify-content: space-between;
             height: 100vh;
             overflow: hidden;
-            padding: 10px 0; /* Padding atas bawah untuk body */
+            padding: 5px 0;
             box-sizing: border-box;
         }
-
-        .game-area {
+        .game-container {
             width: 100%;
             display: flex;
             flex-direction: column;
             align-items: center;
-            flex-grow: 1; /* Mengisi ruang tersedia */
-            justify-content: center; /* Pusatkan area musuh jika ada ruang */
-        }
-
-        /* Area Tampilan Musuh Utama */
-        #enemy-display-area {
-            background-color: rgba(0,0,0,0.2);
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            width: 90%;
-            max-width: 350px;
-            text-align: center;
-            min-height: 220px; /* Untuk konsistensi tinggi */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            flex-grow: 1;
             justify-content: center;
-            border: 2px solid transparent; /* Untuk highlight target */
-            transition: border-color 0.3s;
         }
-        #enemy-display-area.targetable {
+        #enemy-display {
+            background-color: rgba(0,0,0,0.15);
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            width: 85%;
+            max-width: 320px;
+            text-align: center;
+            min-height: 80px;
+            border: 2px solid transparent;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        #enemy-display.targetable {
             cursor: pointer;
-            border-color: #f1c40f; /* Kuning saat bisa ditarget */
+            border-color: #e67e22; /* Oranye saat bisa ditarget */
         }
-        #enemy-display-area.target-selected {
-            border-color: #e74c3c; /* Merah saat terpilih */
-            box-shadow: 0 0 15px #e74c3c;
+        #enemy-display.target-selected {
+            border-color: #c0392b; /* Merah tua saat terpilih */
+            box-shadow: 0 0 10px #c0392b;
         }
-        #enemy-portrait {
-            max-width: 120px;
-            max-height: 120px;
-            height: auto;
-            border-radius: 5px;
-            margin-bottom: 10px;
-            background-color: #2c3e50; /* Placeholder jika gambar tidak ada */
-        }
-        #enemy-name { font-size: 1.2em; font-weight: bold; margin-bottom: 5px; }
-        #enemy-hp-text { font-size: 0.9em; }
-        .hp-bar-container { width: 80%; background-color: #2c3e50; border-radius: 5px; height: 15px; margin-top: 5px; overflow: hidden;}
-        .hp-bar { background-color: #e74c3c; height: 100%; width: 100%; border-radius: 3px; transition: width 0.3s ease;}
+        #enemy-name-display { font-size: 1.1em; font-weight: bold; margin-bottom: 5px; }
+        #enemy-hp-display { font-size: 0.9em; }
 
-        /* Area Tombol Aksi (Normal Attack) */
-        #action-button-area {
-            margin-bottom: 15px; /* Jarak ke PseudoMap */
-            height: 50px; /* Beri ruang meski tombol tersembunyi */
+        #action-button-container {
+            margin-bottom: 10px;
+            height: 45px; /* Ruang untuk tombol */
         }
-        #attack-button {
-            background-color: #e67e22; /* Oranye */
+        #btn-attack {
+            background-color: #c0392b; /* Merah */
             color: white;
             border: none;
-            padding: 12px 25px;
-            font-size: 1.1em;
-            border-radius: 8px;
+            padding: 10px 20px;
+            font-size: 1em;
+            border-radius: 5px;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            transition: background-color 0.2s;
         }
-        #attack-button:hover { background-color: #d35400; }
         .hidden { display: none !important; }
 
-        /* PseudoMap / Command UI */
-        #pseudo-map-container {
+        #pseudo-map {
             width: 100%;
-            background-color: rgba(0,0,0,0.3);
-            padding: 10px 0;
-            overflow-x: auto; /* Scroll horizontal */
-            white-space: nowrap; /* Mencegah item wrap ke baris baru */
-            -webkit-overflow-scrolling: touch; /* Scrolling halus di iOS */
-            scrollbar-width: thin; /* Firefox */
-            scrollbar-color: #888 #333; /* Firefox */
+            background-color: rgba(0,0,0,0.25);
+            padding: 8px 0;
+            overflow-x: auto;
+            white-space: nowrap;
+            text-align: center; /* Pusatkan item jika tidak overflow */
         }
-        #pseudo-map-container::-webkit-scrollbar { height: 8px; } /* Chrome, Safari, Edge */
-        #pseudo-map-container::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
-        #pseudo-map-container::-webkit-scrollbar-track { background: #333; }
-
-        .unit-pseudo-item {
-            display: inline-block; /* Berjajar horizontal */
-            background-color: #4a627a;
-            color: #ecf0f1;
-            padding: 8px;
-            margin: 0 5px;
-            border-radius: 6px;
+        .unit-item {
+            display: inline-block;
+            background-color: #34495e;
+            padding: 6px 10px;
+            margin: 0 4px;
+            border-radius: 4px;
             text-align: center;
-            min-width: 70px; /* Lebar minimum item */
+            min-width: 80px;
             border: 2px solid transparent;
-            cursor: default;
-            transition: transform 0.2s, border-color 0.2s;
+            font-size: 0.8em;
         }
-        .unit-pseudo-item.active-turn {
-            border-color: #3498db; /* Biru untuk unit aktif */
+        .unit-item.active {
+            border-color: #2980b9; /* Biru */
             transform: scale(1.05);
-            box-shadow: 0 0 10px #3498db;
         }
-        .unit-pseudo-item.player-can-act { /* Jika giliran pemain & bisa diklik untuk aksi */
+        .unit-item.player-action {
             cursor: pointer;
-            border-color: #2ecc71; /* Hijau jika bisa diklik */
+            border-color: #27ae60; /* Hijau */
         }
-        .unit-pseudo-item img {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            margin-bottom: 5px;
-            background-color: #2c3e50;
-            object-fit: cover;
-        }
-        .unit-pseudo-item .unit-name { font-size: 0.75em; display: block; white-space: normal; word-break: break-word; }
-        .unit-pseudo-item .unit-hp { font-size: 0.7em; color: #bdc3c7; }
+        .unit-item .name { display: block; font-weight: bold; }
+        .unit-item .hp { font-size: 0.85em; color: #bdc3c7; }
 
-        /* Status & Log */
-        #global-status-message { text-align: center; padding: 5px; font-size: 0.9em; color: #bdc3c7; height: 20px;}
-        .log-box { position: fixed; bottom: 0; left:0; width:100%; background-color: rgba(0,0,0,0.7); color: #9f9; font-size:0.6em; max-height: 60px; overflow-y:auto; padding: 5px; box-sizing: border-box; z-index: 100; }
-        .log-box pre { margin:0; white-space: pre-wrap; }
+        #global-info { text-align: center; padding: 5px; font-size: 0.85em; color: #bdc3c7; height: 18px;}
+        .log-output { position: fixed; bottom: 0; left:0; width:100%; background-color: rgba(0,0,0,0.6); color: #8f8; font-size:0.55em; max-height: 50px; overflow-y:auto; padding: 3px; box-sizing: border-box; z-index: 100; }
+        .log-output pre { margin:0; white-space: pre-wrap; }
     </style>
 </head>
 <body>
-    <div id="global-status-message">Memuat pertarungan...</div>
+    <div id="global-info">Memuat...</div>
 
-    <div class="game-area">
-        <div id="enemy-display-area">
-            <img id="enemy-portrait" src="" alt="Musuh"/>
-            <div id="enemy-name">Nama Musuh</div>
-            <div id="enemy-hp-text">HP: 0/0</div>
-            <div class="hp-bar-container">
-                <div id="enemy-hp-bar" class="hp-bar"></div>
-            </div>
+    <div class="game-container">
+        <div id="enemy-display">
+            <div id="enemy-name-display">Musuh</div>
+            <div id="enemy-hp-display">HP: -/-</div>
         </div>
-
-        <div id="action-button-area" class="hidden">
-            <button id="attack-button">Serang</button>
+        <div id="action-button-container" class="hidden">
+            <button id="btn-attack">Serang</button>
         </div>
     </div>
 
-    <div id="pseudo-map-container">
+    <div id="pseudo-map">
         </div>
 
-    <div class="log-box">
+    <div class="log-output">
         <strong>Log PWA:</strong>
-        <pre id="logOutputPWA"></pre>
+        <pre id="pwaLogArea"></pre>
     </div>
 
     <script type="text/javascript">
-        // Variabel Global PWA
-        let currentBattleData = {};
-        let activeUnitIdPWA = null;
-        let pwaMode = "idle"; // "idle", "waiting_to_select_action", "targeting_for_attack"
-        let focusedEnemyIndex = 0; // Indeks musuh yang sedang ditampilkan di enemy-display-area
+        let battleData = {};
+        let currentActiveUnitId = null;
+        let currentPwaMode = "idle"; // "idle", "action_pending", "targeting"
+        let currentFocusedEnemyIdx = 0;
 
-        // Referensi Elemen DOM
-        let elGlobalStatus, elEnemyDisplayArea, elEnemyPortrait, elEnemyName, elEnemyHpText, elEnemyHpBar;
-        let elActionButtonArea, elAttackButton, elPseudoMapContainer, elLogPWA;
+        // DOM Elements
+        let elGlobalInfo, elEnemyDisplay, elEnemyName, elEnemyHp;
+        let elActionBtnContainer, elBtnAttack, elPseudoMap, elPwaLog;
 
-        function catatLogPWA(pesan) {
-            if (elLogPWA) {
-                const waktu = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                elLogPWA.textContent += `[${waktu}] ${pesan}\n`;
-                elLogPWA.scrollTop = elLogPWA.scrollHeight;
+        function logToPwa(message) {
+            if (elPwaLog) {
+                const time = new Date().toLocaleTimeString('id-ID', { hour12: false });
+                elPwaLog.textContent += `[${time}] ${message}\n`;
+                elPwaLog.scrollTop = elPwaLog.scrollHeight;
             }
-            console.log(`[PWA TBC Simple] ${pesan}`);
+            console.log(`[PWA_TBC_TEXT] ${message}`);
         }
 
-        function updateEnemyDisplay() {
-            if (!currentBattleData.Units || currentBattleData.Units.length === 0) return;
-            const enemies = currentBattleData.Units.filter(u => u.Type === "Enemy" && u.Stats.HP > 0);
+        function displayFocusedEnemy() {
+            if (!battleData.Units || battleData.Units.length === 0) return;
+            const enemies = battleData.Units.filter(u => u.Type === "Enemy" && u.Stats.HP > 0);
             if (enemies.length === 0) {
-                elEnemyDisplayArea.innerHTML = "<p>Semua musuh telah dikalahkan!</p>";
+                elEnemyName.textContent = "Musuh Dikalahkan!";
+                elEnemyHp.textContent = "";
                 return;
             }
-
-            focusedEnemyIndex = Math.max(0, Math.min(focusedEnemyIndex, enemies.length - 1));
-            const enemy = enemies[focusedEnemyIndex];
-
+            currentFocusedEnemyIdx = Math.max(0, Math.min(currentFocusedEnemyIdx, enemies.length - 1));
+            const enemy = enemies[currentFocusedEnemyIdx];
             if (enemy) {
-                elEnemyPortrait.src = (enemy.Img && enemy.Mime) ? `data:${enemy.Mime};base64,${enemy.Img}` : "";
-                elEnemyPortrait.alt = enemy.Name;
                 elEnemyName.textContent = enemy.Name;
-                elEnemyHpText.textContent = `HP: ${enemy.Stats.HP}/${enemy.Stats.MaxHP}`;
-                const hpPercent = enemy.Stats.MaxHP > 0 ? (enemy.Stats.HP / enemy.Stats.MaxHP) * 100 : 0;
-                elEnemyHpBar.style.width = `${hpPercent}%`;
-
-                // Logic untuk swipe (sederhana, hanya ganti index)
-                // Implementasi swipe gesture lebih kompleks, untuk sekarang kita siapkan logikanya
-            } else {
-                 elEnemyDisplayArea.innerHTML = "<p>Tidak ada musuh tersisa untuk ditampilkan.</p>";
+                elEnemyHp.textContent = `HP: ${enemy.Stats.HP}/${enemy.Stats.MaxHP}`;
             }
         }
 
-        function renderPseudoMap() {
-            elPseudoMapContainer.innerHTML = ""; // Kosongkan dulu
-            if (!currentBattleData.Units) return;
+        function populatePseudoMap() {
+            elPseudoMap.innerHTML = "";
+            if (!battleData.Units) return;
 
-            currentBattleData.Units.forEach(unit => { // Asumsi sudah diurutkan Tasker
-                const item = document.createElement('div');
-                item.classList.add('unit-pseudo-item');
-                item.dataset.unitId = unit.id; // Simpan ID unit
+            battleData.Units.forEach(unit => { // Asumsi sudah diurutkan Tasker
+                const itemDiv = document.createElement('div');
+                itemDiv.classList.add('unit-item');
+                itemDiv.dataset.unitId = unit.id || unit.Name; // Gunakan ID jika ada, fallback ke Nama
 
-                const img = document.createElement('img');
-                img.src = (unit.Img && unit.Mime) ? `data:${unit.Mime};base64,${unit.Img}` : "";
-                img.alt = unit.Name;
-                item.appendChild(img);
+                const nameSpan = document.createElement('span');
+                nameSpan.classList.add('name');
+                nameSpan.textContent = unit.Name;
+                itemDiv.appendChild(nameSpan);
 
-                const name = document.createElement('span');
-                name.classList.add('unit-name');
-                name.textContent = unit.Name;
-                item.appendChild(name);
+                const hpSpan = document.createElement('span');
+                hpSpan.classList.add('hp');
+                hpSpan.textContent = `HP: ${unit.Stats.HP}/${unit.Stats.MaxHP}`;
+                itemDiv.appendChild(hpSpan);
 
-                const hp = document.createElement('span');
-                hp.classList.add('unit-hp');
-                hp.textContent = `${unit.Stats.HP}/${unit.Stats.MaxHP}`;
-                item.appendChild(hp);
-
-                if (unit.id === activeUnitIdPWA) {
-                    item.classList.add('active-turn');
-                    if (unit.Type === "Ally") { // Jika unit aktif adalah Ally (pemain)
-                        item.classList.add('player-can-act');
-                        item.onclick = () => handlePlayerUnitTap(unit);
+                if (unit.id === currentActiveUnitId || unit.Name === currentActiveUnitId) { // Cocokkan dengan ID atau Nama
+                    itemDiv.classList.add('active');
+                    if (unit.Type === "Ally") {
+                        itemDiv.classList.add('player-action');
+                        itemDiv.onclick = () => {
+                            logToPwa(`Unit pemain ${unit.Name} di-tap.`);
+                            currentPwaMode = "action_pending";
+                            elActionBtnContainer.classList.remove('hidden');
+                            itemDiv.classList.remove('player-action'); // Nonaktifkan klik lagi setelah tombol muncul
+                        };
                     }
                 }
-                elPseudoMapContainer.appendChild(item);
+                elPseudoMap.appendChild(itemDiv);
             });
         }
 
-        function handlePlayerUnitTap(unit) {
-            if (unit.id === activeUnitIdPWA && unit.Type === "Ally") {
-                catatLogPWA(`Hero aktif ${unit.Name} di-tap. Menampilkan tombol Aksi.`);
-                elActionButtonArea.classList.remove('hidden');
-                pwaMode = "waiting_to_select_action";
-                // Sembunyikan highlight "player-can-act" setelah di-tap untuk pilih aksi
-                const activeItem = elPseudoMapContainer.querySelector('.player-can-act');
-                if(activeItem) activeItem.classList.remove('player-can-act');
+        function refreshFullUI() {
+            if (!battleData) return;
+            currentActiveUnitId = battleData.ActiveUnitID || (battleData.Units && battleData.Units.find(u => u.Status === "Active")?.id) || (battleData.Units && battleData.Units.find(u => u.Status === "Active")?.Name);
+
+            populatePseudoMap();
+            displayFocusedEnemy();
+            elGlobalInfo.textContent = battleData.BattleMessage || "Giliran berlangsung...";
+
+            if (currentPwaMode === "action_pending") {
+                // Tombol sudah visible
+            } else {
+                elActionBtnContainer.classList.add('hidden');
             }
+            
+            elEnemyDisplay.classList.toggle('targetable', currentPwaMode === "targeting");
+            if(currentPwaMode !== "targeting") elEnemyDisplay.classList.remove('target-selected');
         }
 
-        function updateUI() {
-            if (!currentBattleData) return;
-            activeUnitIdPWA = currentBattleData.ActiveUnitID; // Ambil dari JSON Tasker
-            renderPseudoMap();
-            updateEnemyDisplay();
-            elGlobalStatus.textContent = currentBattleData.BattleMessage || "Giliran berlangsung...";
+        document.addEventListener('DOMContentLoaded', () => {
+            elGlobalInfo = document.getElementById('global-info');
+            elEnemyDisplay = document.getElementById('enemy-display');
+            elEnemyName = document.getElementById('enemy-name-display');
+            elEnemyHp = document.getElementById('enemy-hp-display');
+            elActionBtnContainer = document.getElementById('action-button-container');
+            elBtnAttack = document.getElementById('btn-attack');
+            elPseudoMap = document.getElementById('pseudo-map');
+            elPwaLog = document.getElementById('pwaLogArea');
 
-            // Atur visibilitas tombol attack berdasarkan mode PWA
-            if (pwaMode === "waiting_to_select_action" || pwaMode === "targeting_for_attack") {
-                // Tombol attack sudah diatur saat handlePlayerUnitTap atau handleAttackButtonClick
-            } else {
-                elActionButtonArea.classList.add('hidden');
-            }
-
-            // Atur kelas targetable pada area musuh
-            if (pwaMode === "targeting_for_attack") {
-                elEnemyDisplayArea.classList.add('targetable');
-            } else {
-                elEnemyDisplayArea.classList.remove('targetable');
-                elEnemyDisplayArea.classList.remove('target-selected');
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            elGlobalStatus = document.getElementById('global-status-message');
-            elEnemyDisplayArea = document.getElementById('enemy-display-area');
-            elEnemyPortrait = document.getElementById('enemy-portrait');
-            elEnemyName = document.getElementById('enemy-name');
-            elEnemyHpText = document.getElementById('enemy-hp-text');
-            elEnemyHpBar = document.getElementById('enemy-hp-bar');
-            elActionButtonArea = document.getElementById('action-button-area');
-            elAttackButton = document.getElementById('attack-button');
-            elPseudoMapContainer = document.getElementById('pseudo-map-container');
-            elLogPWA = document.getElementById('logOutputPWA');
-
-            catatLogPWA("PWA TBC Sederhana siap (DOMContentLoaded).");
+            logToPwa("PWA Teks Sederhana Siap.");
 
             try {
-                currentBattleData = JSON.parse(window.jsonDataBattle || "{}");
-                catatLogPWA("Data battle awal dari meta: " + (window.jsonDataBattle ? "Ada" : "Kosong"));
+                battleData = JSON.parse(window.jsonDataBattle || "{}");
+                logToPwa("Data awal dari meta: " + (window.jsonDataBattle ? "Ada" : "Kosong"));
             } catch (e) {
-                catatLogPWA("Error parsing jsonDataBattle awal: " + e);
-                currentBattleData = { Units: [], BattleMessage: "Error memuat data awal." };
+                logToPwa("Error parse JSON awal: " + e);
+                battleData = { Units: [], BattleMessage: "Error data awal." };
             }
-            if (window.infoGlobal) elGlobalStatus.textContent = window.infoGlobal;
+            if(window.infoGlobal) elGlobalInfo.textContent = window.infoGlobal;
+            
+            refreshFullUI();
 
-            updateUI(); // Render UI awal
-
-            elAttackButton.addEventListener('click', function() {
-                catatLogPWA("Tombol 'Serang' diklik.");
-                pwaMode = "targeting_for_attack";
-                elGlobalStatus.textContent = "Pilih target musuh...";
-                elActionButtonArea.classList.add('hidden'); // Sembunyikan tombol setelah diklik, tunggu target
-                updateUI(); // Untuk update kelas targetable
+            elBtnAttack.addEventListener('click', () => {
+                logToPwa("Tombol Serang diklik.");
+                currentPwaMode = "targeting";
+                elGlobalInfo.textContent = "Pilih target musuh...";
+                elActionBtnContainer.classList.add('hidden');
+                refreshFullUI(); // Untuk update kelas targetable
             });
 
-            elEnemyDisplayArea.addEventListener('click', function() {
-                if (pwaMode === "targeting_for_attack") {
-                    const enemies = currentBattleData.Units.filter(u => u.Type === "Enemy" && u.Stats.HP > 0);
-                    if (enemies.length > 0 && focusedEnemyIndex < enemies.length) {
-                        const targetEnemy = enemies[focusedEnemyIndex];
-                        catatLogPWA(`Musuh ${targetEnemy.Name} (ID: ${targetEnemy.id}) di-tap sebagai target serangan.`);
-                        elEnemyDisplayArea.classList.add('target-selected'); // Highlight target terpilih
-
-                        // Kirim command ke Tasker
-                        if (window.AutoTools && typeof window.AutoTools.sendCommand === 'function') {
-                            const command = `actorId=${activeUnitIdPWA}&action=normalAttack&targetId=${targetEnemy.id}`;
-                            window.AutoTools.sendCommand(command, "TBC_AKSI_PEMAIN", false);
-                            catatLogPWA("Mengirim command ke Tasker: " + command);
-                        } else {
-                            catatLogPWA("AutoTools.sendCommand tidak tersedia.");
+            elEnemyDisplay.addEventListener('click', () => {
+                if (currentPwaMode === "targeting") {
+                    const enemies = battleData.Units.filter(u => u.Type === "Enemy" && u.Stats.HP > 0);
+                    if (enemies.length > 0 && currentFocusedEnemyIdx < enemies.length) {
+                        const targetEnemy = enemies[currentFocusedEnemyIdx];
+                        const actor = battleData.Units.find(u => u.id === currentActiveUnitId || u.Name === currentActiveUnitId);
+                        
+                        if (!actor) {
+                            logToPwa("Error: Tidak bisa menemukan unit aktif untuk menyerang.");
+                            currentPwaMode = "idle";
+                            refreshFullUI();
+                            return;
                         }
-                        pwaMode = "idle"; // Kembali ke mode idle setelah aksi dikirim
-                        elGlobalStatus.textContent = "Aksi dikirim ke Tasker...";
-                        // Tombol attack akan disembunyikan oleh updateUI() berikutnya dari Tasker
+
+                        logToPwa(`${actor.Name} menargetkan ${targetEnemy.Name}.`);
+                        elEnemyDisplay.classList.add('target-selected');
+
+                        if (window.AutoTools && typeof window.AutoTools.sendCommand === 'function') {
+                            const command = `actorId=${actor.id || actor.Name}&action=normalAttack&targetId=${targetEnemy.id || targetEnemy.Name}`;
+                            window.AutoTools.sendCommand(command, "TBC_AKSI_PEMAIN", false);
+                            logToPwa("Kirim command: " + command);
+                        } else {
+                            logToPwa("AutoTools.sendCommand tidak tersedia.");
+                        }
+                        currentPwaMode = "idle";
+                        elGlobalInfo.textContent = "Aksi dikirim...";
                     }
                 }
             });
-
-            // Implementasi swipe sederhana untuk enemy display (hanya ganti index)
+            
+            // Swipe sederhana untuk enemy display (ganti index fokus)
             let enemyTouchStartX = 0;
-            elEnemyDisplayArea.addEventListener('touchstart', (e) => { enemyTouchStartX = e.touches[0].clientX; }, { passive: true });
-            elEnemyDisplayArea.addEventListener('touchend', (e) => {
-                if (pwaMode === "targeting_for_attack") return; // Jangan swipe jika sedang memilih target spesifik
+            elEnemyDisplay.addEventListener('touchstart', (e) => { enemyTouchStartX = e.touches[0].clientX; }, { passive: true });
+            elEnemyDisplay.addEventListener('touchend', (e) => {
+                if (currentPwaMode === "targeting") return; // Jangan swipe jika sedang memilih target spesifik
                 let enemyTouchEndX = e.changedTouches[0].clientX;
-                const enemies = currentBattleData.Units.filter(u => u.Type === "Enemy" && u.Stats.HP > 0);
-                if (Math.abs(enemyTouchStartX - enemyTouchEndX) > 50 && enemies.length > 1) { // Threshold swipe
+                const enemies = battleData.Units ? battleData.Units.filter(u => u.Type === "Enemy" && u.Stats.HP > 0) : [];
+                if (Math.abs(enemyTouchStartX - enemyTouchEndX) > 30 && enemies.length > 1) { // Threshold swipe
                     if (enemyTouchEndX < enemyTouchStartX) { // Swipe kiri (next)
-                        focusedEnemyIndex = (focusedEnemyIndex + 1) % enemies.length;
+                        currentFocusedEnemyIdx = (currentFocusedEnemyIdx + 1) % enemies.length;
                     } else { // Swipe kanan (prev)
-                        focusedEnemyIndex = (focusedEnemyIndex - 1 + enemies.length) % enemies.length;
+                        currentFocusedEnemyIdx = (currentFocusedEnemyIdx - 1 + enemies.length) % enemies.length;
                     }
-                    updateEnemyDisplay();
-                    catatLogPWA(`Musuh difokuskan ke index: ${focusedEnemyIndex}`);
+                    displayFocusedEnemy(); // Hanya update display musuh, bukan seluruh UI
+                    logToPwa(`Musuh difokuskan ke index: ${currentFocusedEnemyIdx} (${enemies[currentFocusedEnemyIdx].Name})`);
                 }
             }, { passive: true });
 
         });
 
         var autoToolsUpdateValues = function(values) {
-            catatLogPWA("autoToolsUpdateValues dipanggil.");
-            let loggableValues = {...values};
-            if(loggableValues.jsonDataBattle) loggableValues.jsonDataBattle = `(Data JSON diterima - panjang: ${values.jsonDataBattle.length})`;
-            catatLogPWA("Data diterima: " + JSON.stringify(loggableValues));
+            logToPwa("autoToolsUpdateValues dipanggil.");
+            let logValues = {...values};
+            if(logValues.jsonDataBattle) logValues.jsonDataBattle = `(JSON diterima - panjang: ${values.jsonDataBattle.length})`;
+            logToPwa("Data: " + JSON.stringify(logValues));
 
             if (values.infoGlobal) {
-                elGlobalStatus.textContent = values.infoGlobal;
+                elGlobalInfo.textContent = values.infoGlobal;
             }
 
             if (values.jsonDataBattle) {
                 try {
-                    currentBattleData = JSON.parse(values.jsonDataBattle);
-                    pwaMode = "idle"; // Reset mode PWA setiap ada update state dari Tasker
-                    updateUI();
-                    catatLogPWA("State battle berhasil diupdate dari Tasker.");
+                    battleData = JSON.parse(values.jsonDataBattle);
+                    currentPwaMode = "idle"; // Reset mode setelah update state dari Tasker
+                    refreshFullUI();
+                    logToPwa("State battle diupdate dari Tasker.");
                 } catch (e) {
-                    catatLogPWA("Error parsing jsonDataBattle dari update: " + e);
-                    elGlobalStatus.textContent = "Error menerima data dari Tasker.";
+                    logToPwa("Error parsing jsonDataBattle update: " + e);
                 }
             }
         };
-        catatLogPWA("Skrip PWA TBC Sederhana selesai dimuat.");
+        logToPwa("Skrip PWA Teks Sederhana selesai.");
     </script>
 </body>
 </html>
