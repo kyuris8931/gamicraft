@@ -2,64 +2,142 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi Gambar Lokal & Log Bersih</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Galeri Gambar Geser</title>
 
-    <meta name="autotoolswebscreen" type="variablejs" id="img1Base64" label="Gambar 1 (Base64)" defaultValue="" />
-    <meta name="autotoolswebscreen" type="variablejs" id="img1Mime" label="Gambar 1 Tipe MIME" defaultValue="image/png" />
-
-    <meta name="autotoolswebscreen" type="variablejs" id="img2Base64" label="Gambar 2 (Base64)" defaultValue="" />
-    <meta name="autotoolswebscreen" type="variablejs" id="img2Mime" label="Gambar 2 Tipe MIME" defaultValue="image/png" />
-
-    <meta name="autotoolswebscreen" type="variablejs" id="infoStatusUmum" label="Info Status Umum" defaultValue="Menunggu data gambar dari Tasker..." />
+    <meta name="autotoolswebscreen" type="variablejs" id="jsonDataGambarSlider" label="Data JSON Gambar Slider" defaultValue="[]" />
+    <meta name="autotoolswebscreen" type="variablejs" id="infoStatusSlider" label="Info Status Slider" defaultValue="Geser untuk melihat gambar." />
 
     <style>
-        body { font-family: 'Arial', sans-serif; margin: 0; padding: 15px; background-color: #eef1f5; color: #333; display: flex; flex-direction: column; align-items: center; }
-        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); width: 95%; max-width: 600px; text-align: center; }
-        h1 { color: #007bff; margin-bottom: 25px; font-size: 1.6em; }
-        .image-gallery { display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; margin-bottom: 20px; }
-        .image-container { margin: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background-color: #f9f9f9; width: calc(50% - 40px); min-width: 120px; } /* Lebar 50% dikurangi margin/padding */
-        .image-container img {
-            width: 100%;
-            height: auto; /* Menjaga aspek rasio */
-            max-height: 150px; /* Batas tinggi agar tidak terlalu besar */
-            min-height: 80px;
-            display: block;
-            background-color: #eee;
-            border-radius: 4px;
-            object-fit: contain;
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0; /* Hapus padding agar slider bisa full width jika diinginkan */
+            background-color: #f0f2f5;
+            color: #1c1e21;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center; /* Pusatkan slider jika tidak full height */
+            min-height: 100vh;
+            overflow-x: hidden; /* Hindari scroll horizontal di body */
         }
-        .image-container p { font-size: 0.85em; margin-top: 8px; color: #555; }
-        #statusUmum { margin-top: 15px; color: #28a745; font-size: 0.9em; font-weight: bold; min-height: 20px; }
-        .log-area { margin-top: 20px; padding: 10px; background-color: #2c3e50; color: #e0e0e0; border-radius: 5px; text-align: left; font-size: 0.75em; max-height: 180px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; }
-        .log-area strong { color: #569cd6; }
+        .slider-container {
+            width: 90%; /* Lebar slider, bisa disesuaikan */
+            max-width: 500px; /* Lebar maksimum slider */
+            margin: 20px auto; /* Pusatkan slider */
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            overflow: hidden; /* Ini penting untuk menyembunyikan slide lain */
+            position: relative; /* Untuk positioning tombol navigasi absolut */
+        }
+        .slider-wrapper {
+            display: flex; /* Membuat slide berjajar horizontal */
+            transition: transform 0.4s ease-in-out; /* Animasi geser */
+        }
+        .slide {
+            min-width: 100%; /* Setiap slide mengambil lebar penuh kontainer */
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px; /* Padding di dalam slide */
+            position: relative;
+        }
+        .slide img {
+            max-width: 100%;
+            max-height: 300px; /* Batas tinggi gambar */
+            height: auto;
+            border-radius: 8px;
+            object-fit: contain;
+            background-color: #e9ebee;
+            margin-bottom: 10px;
+        }
+        .slide .caption {
+            font-size: 0.9em;
+            color: #606770;
+            text-align: center;
+            margin-top: 5px;
+        }
+        .nav-button {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background-color: rgba(0, 0, 0, 0.4);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2em;
+            z-index: 10;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .nav-button:hover {
+            opacity: 1;
+        }
+        .nav-button.prev {
+            left: 10px;
+        }
+        .nav-button.next {
+            right: 10px;
+        }
+        .nav-button:disabled {
+            opacity: 0.2;
+            cursor: not-allowed;
+        }
+        .dots-container {
+            text-align: center;
+            padding: 10px 0;
+        }
+        .dot {
+            height: 8px;
+            width: 8px;
+            margin: 0 4px;
+            background-color: #bbb;
+            border-radius: 50%;
+            display: inline-block;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        .dot.active {
+            background-color: #007bff;
+        }
+        #statusSlider {
+            margin-top:10px;
+            text-align: center;
+            font-size: 0.9em;
+            color: #606770;
+        }
+        .log-area { margin-top: 15px; padding: 10px; background-color: #222; color: #0f0; border-radius: 5px; text-align: left; font-size: 0.7em; max-height: 120px; overflow-y: auto; font-family: 'Consolas', 'Courier New', monospace; }
         .log-area pre { margin: 0; white-space: pre-wrap; word-break: break-all; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Galeri Gambar dari Tasker</h1>
-        <div class="image-gallery">
-            <div class="image-container">
-                <img id="gambarSlot1" src="" alt="Gambar 1" />
-                <p>Slot Gambar 1</p>
+    <div class="slider-container" id="imageSlider">
+        <div class="slider-wrapper" id="sliderWrapper">
             </div>
-            <div class="image-container">
-                <img id="gambarSlot2" src="" alt="Gambar 2" />
-                <p>Slot Gambar 2</p>
+        <button class="nav-button prev" id="prevBtn" aria-label="Gambar Sebelumnya">&lt;</button>
+        <button class="nav-button next" id="nextBtn" aria-label="Gambar Berikutnya">&gt;</button>
+        <div class="dots-container" id="dotsContainer">
             </div>
-            </div>
-        <p id="statusUmum">Menunggu data gambar dari Tasker...</p>
-        <div class="log-area">
-            <strong>Log PWA:</strong>
-            <pre id="logOutputPWA"></pre>
-        </div>
+    </div>
+    <p id="statusSlider">Geser untuk melihat gambar.</p>
+    <div class="log-area" style="max-width: 500px; width: 90%;">
+        <strong>Log PWA:</strong>
+        <pre id="logOutputPWA"></pre>
     </div>
 
     <script type="text/javascript">
-        let elStatusUmum, elLogPWA;
-        // Simpan referensi elemen gambar dalam objek agar mudah diakses
-        const elGambarSlots = {};
+        let sliderWrapper, prevBtn, nextBtn, dotsContainer, elStatusSlider, elLogPWA;
+        let currentIndex = 0;
+        let slidesData = []; // Akan berisi {base64, mime, caption}
+        let touchStartX = 0;
+        let touchEndX = 0;
+        const swipeThreshold = 50; // Minimal geseran (px) untuk dianggap swipe
 
         function catatLogPWA(pesan) {
             if (elLogPWA) {
@@ -67,91 +145,178 @@
                 elLogPWA.textContent += `[${waktu}] ${pesan}\n`;
                 elLogPWA.scrollTop = elLogPWA.scrollHeight;
             }
-            console.log(`[PWA MultiImg] ${pesan}`);
+            console.log(`[PWA SwipeGallery] ${pesan}`);
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            elStatusUmum = document.getElementById('statusUmum');
-            elLogPWA = document.getElementById('logOutputPWA');
-            elGambarSlots['gambarSlot1'] = document.getElementById('gambarSlot1');
-            elGambarSlots['gambarSlot2'] = document.getElementById('gambarSlot2');
-            // Inisialisasi lebih banyak slot jika ada
+        function createSlides() {
+            sliderWrapper.innerHTML = ''; // Kosongkan slide sebelumnya
+            dotsContainer.innerHTML = ''; // Kosongkan dots sebelumnya
 
-            catatLogPWA("Halaman PWA Multi-Gambar siap (DOMContentLoaded).");
-
-            if (typeof window.infoStatusUmum !== 'undefined') {
-                elStatusUmum.textContent = window.infoStatusUmum;
-                catatLogPWA(`Status umum awal dari meta: "${window.infoStatusUmum}"`);
+            if (!slidesData || slidesData.length === 0) {
+                sliderWrapper.innerHTML = '<div class="slide"><p>Tidak ada gambar untuk ditampilkan.</p></div>';
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+                catatLogPWA("Tidak ada data gambar, slider kosong.");
+                return;
             }
 
-            // Fungsi untuk memuat gambar awal dari meta (jika ada)
-            function muatGambarAwalDariMeta(slotId, base64VarName, mimeVarName) {
-                const base64Data = window[base64VarName];
-                const mimeData = window[mimeVarName];
-                const imgElement = elGambarSlots[slotId];
+            slidesData.forEach((data, index) => {
+                const slide = document.createElement('div');
+                slide.classList.add('slide');
 
-                if (imgElement && base64Data && base64Data.length > 10 && mimeData) {
-                    catatLogPWA(`Mencoba memuat gambar awal untuk ${slotId} dari meta. Tipe: ${mimeData}. Data (awal): ${base64Data.substring(0,30)}...`);
-                    imgElement.src = `data:${mimeData};base64,${base64Data}`;
-                    imgElement.alt = `Gambar awal ${slotId}`;
+                const img = document.createElement('img');
+                if (data.base64 && data.mime) {
+                    img.src = `data:${data.mime};base64,${data.base64}`;
                 } else {
-                    if (imgElement) imgElement.alt = `Belum ada ${slotId}`;
+                    img.src = ""; // Atau placeholder default
+                }
+                img.alt = data.caption || `Gambar ${index + 1}`;
+                slide.appendChild(img);
+
+                if (data.caption) {
+                    const caption = document.createElement('p');
+                    caption.classList.add('caption');
+                    caption.textContent = data.caption;
+                    slide.appendChild(caption);
+                }
+                sliderWrapper.appendChild(slide);
+
+                // Buat dot indicator
+                const dot = document.createElement('span');
+                dot.classList.add('dot');
+                dot.addEventListener('click', () => goToSlide(index));
+                dotsContainer.appendChild(dot);
+            });
+            updateSlider();
+            catatLogPWA(`Slider dibuat dengan ${slidesData.length} gambar.`);
+        }
+
+        function updateSlider() {
+            if (!slidesData || slidesData.length === 0) return;
+            sliderWrapper.style.transform = `translateX(-${currentIndex * 100}%)`;
+
+            // Update active dot
+            const dots = dotsContainer.querySelectorAll('.dot');
+            dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentIndex);
+            });
+
+            // Update tombol navigasi
+            const isSingleImage = slidesData.length <= 1;
+            prevBtn.disabled = currentIndex === 0 || isSingleImage;
+            nextBtn.disabled = currentIndex === slidesData.length - 1 || isSingleImage;
+            prevBtn.style.display = isSingleImage ? 'none' : 'block';
+            nextBtn.style.display = isSingleImage ? 'none' : 'block';
+            dotsContainer.style.display = isSingleImage ? 'none' : 'block';
+        }
+
+        function goToSlide(index) {
+            if (index < 0 || index >= slidesData.length) return;
+            currentIndex = index;
+            updateSlider();
+        }
+
+        function nextSlide() {
+            if (currentIndex < slidesData.length - 1) {
+                currentIndex++;
+                updateSlider();
+            }
+        }
+
+        function prevSlide() {
+            if (currentIndex > 0) {
+                currentIndex--;
+                updateSlider();
+            }
+        }
+
+        // Touch event handlers
+        function handleTouchStart(event) {
+            if (slidesData.length <= 1) return; // Jangan proses swipe jika hanya 1 gambar
+            touchStartX = event.touches[0].clientX;
+            touchEndX = 0; // Reset touchEndX
+        }
+
+        function handleTouchMove(event) {
+            if (slidesData.length <= 1 || touchStartX === 0) return;
+            touchEndX = event.touches[0].clientX;
+        }
+
+        function handleTouchEnd() {
+            if (slidesData.length <= 1 || touchStartX === 0 || touchEndX === 0) return; // Jangan proses jika tidak ada swipe berarti
+
+            const diffX = touchStartX - touchEndX;
+            if (Math.abs(diffX) > swipeThreshold) { // Hanya proses jika swipe cukup jauh
+                if (diffX > 0) { // Swipe ke kiri (gambar berikutnya)
+                    nextSlide();
+                } else { // Swipe ke kanan (gambar sebelumnya)
+                    prevSlide();
                 }
             }
+            touchStartX = 0; // Reset setelah swipe selesai
+            touchEndX = 0;
+        }
 
-            muatGambarAwalDariMeta('gambarSlot1', 'img1Base64', 'img1Mime');
-            muatGambarAwalDariMeta('gambarSlot2', 'img2Base64', 'img2Mime');
 
+        document.addEventListener('DOMContentLoaded', function() {
+            sliderWrapper = document.getElementById('sliderWrapper');
+            prevBtn = document.getElementById('prevBtn');
+            nextBtn = document.getElementById('nextBtn');
+            dotsContainer = document.getElementById('dotsContainer');
+            elStatusSlider = document.getElementById('statusSlider');
+            elLogPWA = document.getElementById('logOutputPWA');
+
+            catatLogPWA("Halaman PWA Galeri Geser siap (DOMContentLoaded).");
+
+            if (typeof window.infoStatusSlider !== 'undefined') {
+                elStatusSlider.textContent = window.infoStatusSlider;
+            }
+
+            try {
+                slidesData = JSON.parse(window.jsonDataGambarSlider || "[]");
+            } catch (e) {
+                catatLogPWA("Error parsing jsonDataGambarSlider awal: " + e);
+                slidesData = [];
+            }
+            createSlides(); // Buat slide awal berdasarkan data dari meta
+
+            prevBtn.addEventListener('click', prevSlide);
+            nextBtn.addEventListener('click', nextSlide);
+
+            // Tambahkan event listener untuk swipe
+            sliderWrapper.addEventListener('touchstart', handleTouchStart, { passive: true });
+            sliderWrapper.addEventListener('touchmove', handleTouchMove, { passive: true });
+            sliderWrapper.addEventListener('touchend', handleTouchEnd);
         });
 
         var autoToolsUpdateValues = function(values) {
             catatLogPWA("autoToolsUpdateValues dipanggil oleh Tasker.");
-            // Log objek values tanpa data base64 yang panjang
-            let valuesUntukLog = {...values}; // Buat salinan
-            if (valuesUntukLog.img1Base64) valuesUntukLog.img1Base64 = `(Data Base64 Gbr1 - Panjang: ${values.img1Base64.length})`;
-            if (valuesUntukLog.img2Base64) valuesUntukLog.img2Base64 = `(Data Base64 Gbr2 - Panjang: ${values.img2Base64.length})`;
+            let valuesUntukLog = {...values};
+            if (valuesUntukLog.jsonDataGambarSlider) valuesUntukLog.jsonDataGambarSlider = `(Data JSON Gambar - Panjang: ${values.jsonDataGambarSlider.length})`;
             catatLogPWA("Data diterima: " + JSON.stringify(valuesUntukLog));
 
-
-            if (typeof values.infoStatusUmum !== 'undefined') {
-                elStatusUmum.textContent = values.infoStatusUmum;
-                catatLogPWA(`Status umum diupdate: "${values.infoStatusUmum}"`);
+            if (typeof values.infoStatusSlider !== 'undefined') {
+                elStatusSlider.textContent = values.infoStatusSlider;
             }
 
-            // Fungsi untuk mengupdate slot gambar
-            function updateSlotGambar(slotId, base64VarName, mimeVarName) {
-                if (typeof values[base64VarName] !== 'undefined' && typeof values[mimeVarName] !== 'undefined') {
-                    const stringBase64 = values[base64VarName];
-                    const mimeTipe = values[mimeVarName];
-                    const imgElement = elGambarSlots[slotId];
-
-                    if (imgElement) {
-                        if (stringBase64 && stringBase64.length > 10 && mimeTipe) {
-                            catatLogPWA(`Mengupdate ${slotId}. Tipe: ${mimeTipe}. Data (awal): ${stringBase64.substring(0,30)}...`);
-                            imgElement.src = `data:${mimeTipe};base64,${stringBase64}`;
-                            imgElement.alt = `${slotId} dari Tasker`;
-                        } else {
-                            catatLogPWA(`Data Base64 atau tipe MIME untuk ${slotId} tidak valid/kosong. Gambar dikosongkan.`);
-                            imgElement.src = "";
-                            imgElement.alt = `Gagal memuat ${slotId}`;
-                        }
+            if (typeof values.jsonDataGambarSlider !== 'undefined') {
+                try {
+                    const newData = JSON.parse(values.jsonDataGambarSlider);
+                    if (JSON.stringify(newData) !== JSON.stringify(slidesData)) { // Hanya update jika data berbeda
+                        slidesData = newData;
+                        currentIndex = 0; // Reset ke slide pertama saat data baru masuk
+                        createSlides();
+                        catatLogPWA("Data gambar slider diperbarui dari Tasker.");
                     } else {
-                        catatLogPWA(`Elemen <img> '${slotId}' tidak ditemukan.`);
+                        catatLogPWA("Data gambar slider sama dengan yang sudah ada, tidak ada perubahan.");
                     }
+                } catch (e) {
+                    catatLogPWA("Error parsing jsonDataGambarSlider dari update: " + e);
+                    // Mungkin tampilkan pesan error ke pengguna atau biarkan slide lama
                 }
             }
-
-            updateSlotGambar('gambarSlot1', 'img1Base64', 'img1Mime');
-            updateSlotGambar('gambarSlot2', 'img2Base64', 'img2Mime');
-            // Panggil updateSlotGambar untuk slot lain jika ada
-
-            // Update status umum jika tidak ada pesan spesifik dan ada update gambar
-            if (typeof values.infoStatusUmum === 'undefined' && (values.img1Base64 || values.img2Base64)) {
-                 elStatusUmum.textContent = "Satu atau lebih gambar telah diperbarui.";
-            }
         };
-
-        catatLogPWA("Skrip PWA Multi-Gambar selesai dimuat.");
+        catatLogPWA("Skrip PWA Galeri Geser selesai dimuat.");
     </script>
 </body>
 </html>
