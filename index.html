@@ -3,141 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Galeri Gambar Geser</title>
+    <title>TBC PseudoPos Sederhana</title>
 
-    <meta name="autotoolswebscreen" type="variablejs" id="jsonDataGambarSlider" label="Data JSON Gambar Slider" defaultValue="[]" />
-    <meta name="autotoolswebscreen" type="variablejs" id="infoStatusSlider" label="Info Status Slider" defaultValue="Geser untuk melihat gambar." />
+    <meta name="autotoolswebscreen" type="variablejs" id="jsonDataBattle" label="Data JSON Battle" defaultValue="{}" />
+    <meta name="autotoolswebscreen" type="variablejs" id="infoGlobal" label="Info Global" defaultValue="Memuat pertarungan..." />
 
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
-            padding: 0; /* Hapus padding agar slider bisa full width jika diinginkan */
-            background-color: #f0f2f5;
-            color: #1c1e21;
+            background-color: #34495e; /* Latar belakang gelap */
+            color: #ecf0f1; /* Teks terang */
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center; /* Pusatkan slider jika tidak full height */
-            min-height: 100vh;
-            overflow-x: hidden; /* Hindari scroll horizontal di body */
-        }
-        .slider-container {
-            width: 90%; /* Lebar slider, bisa disesuaikan */
-            max-width: 500px; /* Lebar maksimum slider */
-            margin: 20px auto; /* Pusatkan slider */
-            background-color: #ffffff;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-            overflow: hidden; /* Ini penting untuk menyembunyikan slide lain */
-            position: relative; /* Untuk positioning tombol navigasi absolut */
-        }
-        .slider-wrapper {
-            display: flex; /* Membuat slide berjajar horizontal */
-            transition: transform 0.4s ease-in-out; /* Animasi geser */
-        }
-        .slide {
-            min-width: 100%; /* Setiap slide mengambil lebar penuh kontainer */
+            justify-content: space-between; /* Mendorong command UI ke bawah */
+            height: 100vh;
+            overflow: hidden;
+            padding: 10px 0; /* Padding atas bawah untuk body */
             box-sizing: border-box;
+        }
+
+        .game-area {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-grow: 1; /* Mengisi ruang tersedia */
+            justify-content: center; /* Pusatkan area musuh jika ada ruang */
+        }
+
+        /* Area Tampilan Musuh Utama */
+        #enemy-display-area {
+            background-color: rgba(0,0,0,0.2);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            width: 90%;
+            max-width: 350px;
+            text-align: center;
+            min-height: 220px; /* Untuk konsistensi tinggi */
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            padding: 15px; /* Padding di dalam slide */
-            position: relative;
+            border: 2px solid transparent; /* Untuk highlight target */
+            transition: border-color 0.3s;
         }
-        .slide img {
-            max-width: 100%;
-            max-height: 300px; /* Batas tinggi gambar */
+        #enemy-display-area.targetable {
+            cursor: pointer;
+            border-color: #f1c40f; /* Kuning saat bisa ditarget */
+        }
+        #enemy-display-area.target-selected {
+            border-color: #e74c3c; /* Merah saat terpilih */
+            box-shadow: 0 0 15px #e74c3c;
+        }
+        #enemy-portrait {
+            max-width: 120px;
+            max-height: 120px;
             height: auto;
-            border-radius: 8px;
-            object-fit: contain;
-            background-color: #e9ebee;
+            border-radius: 5px;
             margin-bottom: 10px;
+            background-color: #2c3e50; /* Placeholder jika gambar tidak ada */
         }
-        .slide .caption {
-            font-size: 0.9em;
-            color: #606770;
-            text-align: center;
-            margin-top: 5px;
+        #enemy-name { font-size: 1.2em; font-weight: bold; margin-bottom: 5px; }
+        #enemy-hp-text { font-size: 0.9em; }
+        .hp-bar-container { width: 80%; background-color: #2c3e50; border-radius: 5px; height: 15px; margin-top: 5px; overflow: hidden;}
+        .hp-bar { background-color: #e74c3c; height: 100%; width: 100%; border-radius: 3px; transition: width 0.3s ease;}
+
+        /* Area Tombol Aksi (Normal Attack) */
+        #action-button-area {
+            margin-bottom: 15px; /* Jarak ke PseudoMap */
+            height: 50px; /* Beri ruang meski tombol tersembunyi */
         }
-        .nav-button {
-            position: absolute;
-            top: 50%;
-            transform: translateY(-50%);
-            background-color: rgba(0, 0, 0, 0.4);
+        #attack-button {
+            background-color: #e67e22; /* Oranye */
             color: white;
             border: none;
-            padding: 8px 12px;
-            border-radius: 50%;
+            padding: 12px 25px;
+            font-size: 1.1em;
+            border-radius: 8px;
             cursor: pointer;
-            font-size: 1.2em;
-            z-index: 10;
-            opacity: 0.7;
-            transition: opacity 0.2s;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.2s;
         }
-        .nav-button:hover {
-            opacity: 1;
-        }
-        .nav-button.prev {
-            left: 10px;
-        }
-        .nav-button.next {
-            right: 10px;
-        }
-        .nav-button:disabled {
-            opacity: 0.2;
-            cursor: not-allowed;
-        }
-        .dots-container {
-            text-align: center;
+        #attack-button:hover { background-color: #d35400; }
+        .hidden { display: none !important; }
+
+        /* PseudoMap / Command UI */
+        #pseudo-map-container {
+            width: 100%;
+            background-color: rgba(0,0,0,0.3);
             padding: 10px 0;
+            overflow-x: auto; /* Scroll horizontal */
+            white-space: nowrap; /* Mencegah item wrap ke baris baru */
+            -webkit-overflow-scrolling: touch; /* Scrolling halus di iOS */
+            scrollbar-width: thin; /* Firefox */
+            scrollbar-color: #888 #333; /* Firefox */
         }
-        .dot {
-            height: 8px;
-            width: 8px;
-            margin: 0 4px;
-            background-color: #bbb;
-            border-radius: 50%;
-            display: inline-block;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        .dot.active {
-            background-color: #007bff;
-        }
-        #statusSlider {
-            margin-top:10px;
+        #pseudo-map-container::-webkit-scrollbar { height: 8px; } /* Chrome, Safari, Edge */
+        #pseudo-map-container::-webkit-scrollbar-thumb { background: #888; border-radius: 4px; }
+        #pseudo-map-container::-webkit-scrollbar-track { background: #333; }
+
+        .unit-pseudo-item {
+            display: inline-block; /* Berjajar horizontal */
+            background-color: #4a627a;
+            color: #ecf0f1;
+            padding: 8px;
+            margin: 0 5px;
+            border-radius: 6px;
             text-align: center;
-            font-size: 0.9em;
-            color: #606770;
+            min-width: 70px; /* Lebar minimum item */
+            border: 2px solid transparent;
+            cursor: default;
+            transition: transform 0.2s, border-color 0.2s;
         }
-        .log-area { margin-top: 15px; padding: 10px; background-color: #222; color: #0f0; border-radius: 5px; text-align: left; font-size: 0.7em; max-height: 120px; overflow-y: auto; font-family: 'Consolas', 'Courier New', monospace; }
-        .log-area pre { margin: 0; white-space: pre-wrap; word-break: break-all; }
+        .unit-pseudo-item.active-turn {
+            border-color: #3498db; /* Biru untuk unit aktif */
+            transform: scale(1.05);
+            box-shadow: 0 0 10px #3498db;
+        }
+        .unit-pseudo-item.player-can-act { /* Jika giliran pemain & bisa diklik untuk aksi */
+            cursor: pointer;
+            border-color: #2ecc71; /* Hijau jika bisa diklik */
+        }
+        .unit-pseudo-item img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-bottom: 5px;
+            background-color: #2c3e50;
+            object-fit: cover;
+        }
+        .unit-pseudo-item .unit-name { font-size: 0.75em; display: block; white-space: normal; word-break: break-word; }
+        .unit-pseudo-item .unit-hp { font-size: 0.7em; color: #bdc3c7; }
+
+        /* Status & Log */
+        #global-status-message { text-align: center; padding: 5px; font-size: 0.9em; color: #bdc3c7; height: 20px;}
+        .log-box { position: fixed; bottom: 0; left:0; width:100%; background-color: rgba(0,0,0,0.7); color: #9f9; font-size:0.6em; max-height: 60px; overflow-y:auto; padding: 5px; box-sizing: border-box; z-index: 100; }
+        .log-box pre { margin:0; white-space: pre-wrap; }
     </style>
 </head>
 <body>
-    <div class="slider-container" id="imageSlider">
-        <div class="slider-wrapper" id="sliderWrapper">
+    <div id="global-status-message">Memuat pertarungan...</div>
+
+    <div class="game-area">
+        <div id="enemy-display-area">
+            <img id="enemy-portrait" src="" alt="Musuh"/>
+            <div id="enemy-name">Nama Musuh</div>
+            <div id="enemy-hp-text">HP: 0/0</div>
+            <div class="hp-bar-container">
+                <div id="enemy-hp-bar" class="hp-bar"></div>
             </div>
-        <button class="nav-button prev" id="prevBtn" aria-label="Gambar Sebelumnya">&lt;</button>
-        <button class="nav-button next" id="nextBtn" aria-label="Gambar Berikutnya">&gt;</button>
-        <div class="dots-container" id="dotsContainer">
-            </div>
+        </div>
+
+        <div id="action-button-area" class="hidden">
+            <button id="attack-button">Serang</button>
+        </div>
     </div>
-    <p id="statusSlider">Geser untuk melihat gambar.</p>
-    <div class="log-area" style="max-width: 500px; width: 90%;">
+
+    <div id="pseudo-map-container">
+        </div>
+
+    <div class="log-box">
         <strong>Log PWA:</strong>
         <pre id="logOutputPWA"></pre>
     </div>
 
     <script type="text/javascript">
-        let sliderWrapper, prevBtn, nextBtn, dotsContainer, elStatusSlider, elLogPWA;
-        let currentIndex = 0;
-        let slidesData = []; // Akan berisi {base64, mime, caption}
-        let touchStartX = 0;
-        let touchEndX = 0;
-        const swipeThreshold = 50; // Minimal geseran (px) untuk dianggap swipe
+        // Variabel Global PWA
+        let currentBattleData = {};
+        let activeUnitIdPWA = null;
+        let pwaMode = "idle"; // "idle", "waiting_to_select_action", "targeting_for_attack"
+        let focusedEnemyIndex = 0; // Indeks musuh yang sedang ditampilkan di enemy-display-area
+
+        // Referensi Elemen DOM
+        let elGlobalStatus, elEnemyDisplayArea, elEnemyPortrait, elEnemyName, elEnemyHpText, elEnemyHpBar;
+        let elActionButtonArea, elAttackButton, elPseudoMapContainer, elLogPWA;
 
         function catatLogPWA(pesan) {
             if (elLogPWA) {
@@ -145,178 +187,203 @@
                 elLogPWA.textContent += `[${waktu}] ${pesan}\n`;
                 elLogPWA.scrollTop = elLogPWA.scrollHeight;
             }
-            console.log(`[PWA SwipeGallery] ${pesan}`);
+            console.log(`[PWA TBC Simple] ${pesan}`);
         }
 
-        function createSlides() {
-            sliderWrapper.innerHTML = ''; // Kosongkan slide sebelumnya
-            dotsContainer.innerHTML = ''; // Kosongkan dots sebelumnya
-
-            if (!slidesData || slidesData.length === 0) {
-                sliderWrapper.innerHTML = '<div class="slide"><p>Tidak ada gambar untuk ditampilkan.</p></div>';
-                prevBtn.style.display = 'none';
-                nextBtn.style.display = 'none';
-                catatLogPWA("Tidak ada data gambar, slider kosong.");
+        function updateEnemyDisplay() {
+            if (!currentBattleData.Units || currentBattleData.Units.length === 0) return;
+            const enemies = currentBattleData.Units.filter(u => u.Type === "Enemy" && u.Stats.HP > 0);
+            if (enemies.length === 0) {
+                elEnemyDisplayArea.innerHTML = "<p>Semua musuh telah dikalahkan!</p>";
                 return;
             }
 
-            slidesData.forEach((data, index) => {
-                const slide = document.createElement('div');
-                slide.classList.add('slide');
+            focusedEnemyIndex = Math.max(0, Math.min(focusedEnemyIndex, enemies.length - 1));
+            const enemy = enemies[focusedEnemyIndex];
+
+            if (enemy) {
+                elEnemyPortrait.src = (enemy.Img && enemy.Mime) ? `data:${enemy.Mime};base64,${enemy.Img}` : "";
+                elEnemyPortrait.alt = enemy.Name;
+                elEnemyName.textContent = enemy.Name;
+                elEnemyHpText.textContent = `HP: ${enemy.Stats.HP}/${enemy.Stats.MaxHP}`;
+                const hpPercent = enemy.Stats.MaxHP > 0 ? (enemy.Stats.HP / enemy.Stats.MaxHP) * 100 : 0;
+                elEnemyHpBar.style.width = `${hpPercent}%`;
+
+                // Logic untuk swipe (sederhana, hanya ganti index)
+                // Implementasi swipe gesture lebih kompleks, untuk sekarang kita siapkan logikanya
+            } else {
+                 elEnemyDisplayArea.innerHTML = "<p>Tidak ada musuh tersisa untuk ditampilkan.</p>";
+            }
+        }
+
+        function renderPseudoMap() {
+            elPseudoMapContainer.innerHTML = ""; // Kosongkan dulu
+            if (!currentBattleData.Units) return;
+
+            currentBattleData.Units.forEach(unit => { // Asumsi sudah diurutkan Tasker
+                const item = document.createElement('div');
+                item.classList.add('unit-pseudo-item');
+                item.dataset.unitId = unit.id; // Simpan ID unit
 
                 const img = document.createElement('img');
-                if (data.base64 && data.mime) {
-                    img.src = `data:${data.mime};base64,${data.base64}`;
-                } else {
-                    img.src = ""; // Atau placeholder default
-                }
-                img.alt = data.caption || `Gambar ${index + 1}`;
-                slide.appendChild(img);
+                img.src = (unit.Img && unit.Mime) ? `data:${unit.Mime};base64,${unit.Img}` : "";
+                img.alt = unit.Name;
+                item.appendChild(img);
 
-                if (data.caption) {
-                    const caption = document.createElement('p');
-                    caption.classList.add('caption');
-                    caption.textContent = data.caption;
-                    slide.appendChild(caption);
-                }
-                sliderWrapper.appendChild(slide);
+                const name = document.createElement('span');
+                name.classList.add('unit-name');
+                name.textContent = unit.Name;
+                item.appendChild(name);
 
-                // Buat dot indicator
-                const dot = document.createElement('span');
-                dot.classList.add('dot');
-                dot.addEventListener('click', () => goToSlide(index));
-                dotsContainer.appendChild(dot);
+                const hp = document.createElement('span');
+                hp.classList.add('unit-hp');
+                hp.textContent = `${unit.Stats.HP}/${unit.Stats.MaxHP}`;
+                item.appendChild(hp);
+
+                if (unit.id === activeUnitIdPWA) {
+                    item.classList.add('active-turn');
+                    if (unit.Type === "Ally") { // Jika unit aktif adalah Ally (pemain)
+                        item.classList.add('player-can-act');
+                        item.onclick = () => handlePlayerUnitTap(unit);
+                    }
+                }
+                elPseudoMapContainer.appendChild(item);
             });
-            updateSlider();
-            catatLogPWA(`Slider dibuat dengan ${slidesData.length} gambar.`);
         }
 
-        function updateSlider() {
-            if (!slidesData || slidesData.length === 0) return;
-            sliderWrapper.style.transform = `translateX(-${currentIndex * 100}%)`;
-
-            // Update active dot
-            const dots = dotsContainer.querySelectorAll('.dot');
-            dots.forEach((dot, index) => {
-                dot.classList.toggle('active', index === currentIndex);
-            });
-
-            // Update tombol navigasi
-            const isSingleImage = slidesData.length <= 1;
-            prevBtn.disabled = currentIndex === 0 || isSingleImage;
-            nextBtn.disabled = currentIndex === slidesData.length - 1 || isSingleImage;
-            prevBtn.style.display = isSingleImage ? 'none' : 'block';
-            nextBtn.style.display = isSingleImage ? 'none' : 'block';
-            dotsContainer.style.display = isSingleImage ? 'none' : 'block';
-        }
-
-        function goToSlide(index) {
-            if (index < 0 || index >= slidesData.length) return;
-            currentIndex = index;
-            updateSlider();
-        }
-
-        function nextSlide() {
-            if (currentIndex < slidesData.length - 1) {
-                currentIndex++;
-                updateSlider();
+        function handlePlayerUnitTap(unit) {
+            if (unit.id === activeUnitIdPWA && unit.Type === "Ally") {
+                catatLogPWA(`Hero aktif ${unit.Name} di-tap. Menampilkan tombol Aksi.`);
+                elActionButtonArea.classList.remove('hidden');
+                pwaMode = "waiting_to_select_action";
+                // Sembunyikan highlight "player-can-act" setelah di-tap untuk pilih aksi
+                const activeItem = elPseudoMapContainer.querySelector('.player-can-act');
+                if(activeItem) activeItem.classList.remove('player-can-act');
             }
         }
 
-        function prevSlide() {
-            if (currentIndex > 0) {
-                currentIndex--;
-                updateSlider();
+        function updateUI() {
+            if (!currentBattleData) return;
+            activeUnitIdPWA = currentBattleData.ActiveUnitID; // Ambil dari JSON Tasker
+            renderPseudoMap();
+            updateEnemyDisplay();
+            elGlobalStatus.textContent = currentBattleData.BattleMessage || "Giliran berlangsung...";
+
+            // Atur visibilitas tombol attack berdasarkan mode PWA
+            if (pwaMode === "waiting_to_select_action" || pwaMode === "targeting_for_attack") {
+                // Tombol attack sudah diatur saat handlePlayerUnitTap atau handleAttackButtonClick
+            } else {
+                elActionButtonArea.classList.add('hidden');
+            }
+
+            // Atur kelas targetable pada area musuh
+            if (pwaMode === "targeting_for_attack") {
+                elEnemyDisplayArea.classList.add('targetable');
+            } else {
+                elEnemyDisplayArea.classList.remove('targetable');
+                elEnemyDisplayArea.classList.remove('target-selected');
             }
         }
-
-        // Touch event handlers
-        function handleTouchStart(event) {
-            if (slidesData.length <= 1) return; // Jangan proses swipe jika hanya 1 gambar
-            touchStartX = event.touches[0].clientX;
-            touchEndX = 0; // Reset touchEndX
-        }
-
-        function handleTouchMove(event) {
-            if (slidesData.length <= 1 || touchStartX === 0) return;
-            touchEndX = event.touches[0].clientX;
-        }
-
-        function handleTouchEnd() {
-            if (slidesData.length <= 1 || touchStartX === 0 || touchEndX === 0) return; // Jangan proses jika tidak ada swipe berarti
-
-            const diffX = touchStartX - touchEndX;
-            if (Math.abs(diffX) > swipeThreshold) { // Hanya proses jika swipe cukup jauh
-                if (diffX > 0) { // Swipe ke kiri (gambar berikutnya)
-                    nextSlide();
-                } else { // Swipe ke kanan (gambar sebelumnya)
-                    prevSlide();
-                }
-            }
-            touchStartX = 0; // Reset setelah swipe selesai
-            touchEndX = 0;
-        }
-
 
         document.addEventListener('DOMContentLoaded', function() {
-            sliderWrapper = document.getElementById('sliderWrapper');
-            prevBtn = document.getElementById('prevBtn');
-            nextBtn = document.getElementById('nextBtn');
-            dotsContainer = document.getElementById('dotsContainer');
-            elStatusSlider = document.getElementById('statusSlider');
+            elGlobalStatus = document.getElementById('global-status-message');
+            elEnemyDisplayArea = document.getElementById('enemy-display-area');
+            elEnemyPortrait = document.getElementById('enemy-portrait');
+            elEnemyName = document.getElementById('enemy-name');
+            elEnemyHpText = document.getElementById('enemy-hp-text');
+            elEnemyHpBar = document.getElementById('enemy-hp-bar');
+            elActionButtonArea = document.getElementById('action-button-area');
+            elAttackButton = document.getElementById('attack-button');
+            elPseudoMapContainer = document.getElementById('pseudo-map-container');
             elLogPWA = document.getElementById('logOutputPWA');
 
-            catatLogPWA("Halaman PWA Galeri Geser siap (DOMContentLoaded).");
-
-            if (typeof window.infoStatusSlider !== 'undefined') {
-                elStatusSlider.textContent = window.infoStatusSlider;
-            }
+            catatLogPWA("PWA TBC Sederhana siap (DOMContentLoaded).");
 
             try {
-                slidesData = JSON.parse(window.jsonDataGambarSlider || "[]");
+                currentBattleData = JSON.parse(window.jsonDataBattle || "{}");
+                catatLogPWA("Data battle awal dari meta: " + (window.jsonDataBattle ? "Ada" : "Kosong"));
             } catch (e) {
-                catatLogPWA("Error parsing jsonDataGambarSlider awal: " + e);
-                slidesData = [];
+                catatLogPWA("Error parsing jsonDataBattle awal: " + e);
+                currentBattleData = { Units: [], BattleMessage: "Error memuat data awal." };
             }
-            createSlides(); // Buat slide awal berdasarkan data dari meta
+            if (window.infoGlobal) elGlobalStatus.textContent = window.infoGlobal;
 
-            prevBtn.addEventListener('click', prevSlide);
-            nextBtn.addEventListener('click', nextSlide);
+            updateUI(); // Render UI awal
 
-            // Tambahkan event listener untuk swipe
-            sliderWrapper.addEventListener('touchstart', handleTouchStart, { passive: true });
-            sliderWrapper.addEventListener('touchmove', handleTouchMove, { passive: true });
-            sliderWrapper.addEventListener('touchend', handleTouchEnd);
+            elAttackButton.addEventListener('click', function() {
+                catatLogPWA("Tombol 'Serang' diklik.");
+                pwaMode = "targeting_for_attack";
+                elGlobalStatus.textContent = "Pilih target musuh...";
+                elActionButtonArea.classList.add('hidden'); // Sembunyikan tombol setelah diklik, tunggu target
+                updateUI(); // Untuk update kelas targetable
+            });
+
+            elEnemyDisplayArea.addEventListener('click', function() {
+                if (pwaMode === "targeting_for_attack") {
+                    const enemies = currentBattleData.Units.filter(u => u.Type === "Enemy" && u.Stats.HP > 0);
+                    if (enemies.length > 0 && focusedEnemyIndex < enemies.length) {
+                        const targetEnemy = enemies[focusedEnemyIndex];
+                        catatLogPWA(`Musuh ${targetEnemy.Name} (ID: ${targetEnemy.id}) di-tap sebagai target serangan.`);
+                        elEnemyDisplayArea.classList.add('target-selected'); // Highlight target terpilih
+
+                        // Kirim command ke Tasker
+                        if (window.AutoTools && typeof window.AutoTools.sendCommand === 'function') {
+                            const command = `actorId=${activeUnitIdPWA}&action=normalAttack&targetId=${targetEnemy.id}`;
+                            window.AutoTools.sendCommand(command, "TBC_AKSI_PEMAIN", false);
+                            catatLogPWA("Mengirim command ke Tasker: " + command);
+                        } else {
+                            catatLogPWA("AutoTools.sendCommand tidak tersedia.");
+                        }
+                        pwaMode = "idle"; // Kembali ke mode idle setelah aksi dikirim
+                        elGlobalStatus.textContent = "Aksi dikirim ke Tasker...";
+                        // Tombol attack akan disembunyikan oleh updateUI() berikutnya dari Tasker
+                    }
+                }
+            });
+
+            // Implementasi swipe sederhana untuk enemy display (hanya ganti index)
+            let enemyTouchStartX = 0;
+            elEnemyDisplayArea.addEventListener('touchstart', (e) => { enemyTouchStartX = e.touches[0].clientX; }, { passive: true });
+            elEnemyDisplayArea.addEventListener('touchend', (e) => {
+                if (pwaMode === "targeting_for_attack") return; // Jangan swipe jika sedang memilih target spesifik
+                let enemyTouchEndX = e.changedTouches[0].clientX;
+                const enemies = currentBattleData.Units.filter(u => u.Type === "Enemy" && u.Stats.HP > 0);
+                if (Math.abs(enemyTouchStartX - enemyTouchEndX) > 50 && enemies.length > 1) { // Threshold swipe
+                    if (enemyTouchEndX < enemyTouchStartX) { // Swipe kiri (next)
+                        focusedEnemyIndex = (focusedEnemyIndex + 1) % enemies.length;
+                    } else { // Swipe kanan (prev)
+                        focusedEnemyIndex = (focusedEnemyIndex - 1 + enemies.length) % enemies.length;
+                    }
+                    updateEnemyDisplay();
+                    catatLogPWA(`Musuh difokuskan ke index: ${focusedEnemyIndex}`);
+                }
+            }, { passive: true });
+
         });
 
         var autoToolsUpdateValues = function(values) {
-            catatLogPWA("autoToolsUpdateValues dipanggil oleh Tasker.");
-            let valuesUntukLog = {...values};
-            if (valuesUntukLog.jsonDataGambarSlider) valuesUntukLog.jsonDataGambarSlider = `(Data JSON Gambar - Panjang: ${values.jsonDataGambarSlider.length})`;
-            catatLogPWA("Data diterima: " + JSON.stringify(valuesUntukLog));
+            catatLogPWA("autoToolsUpdateValues dipanggil.");
+            let loggableValues = {...values};
+            if(loggableValues.jsonDataBattle) loggableValues.jsonDataBattle = `(Data JSON diterima - panjang: ${values.jsonDataBattle.length})`;
+            catatLogPWA("Data diterima: " + JSON.stringify(loggableValues));
 
-            if (typeof values.infoStatusSlider !== 'undefined') {
-                elStatusSlider.textContent = values.infoStatusSlider;
+            if (values.infoGlobal) {
+                elGlobalStatus.textContent = values.infoGlobal;
             }
 
-            if (typeof values.jsonDataGambarSlider !== 'undefined') {
+            if (values.jsonDataBattle) {
                 try {
-                    const newData = JSON.parse(values.jsonDataGambarSlider);
-                    if (JSON.stringify(newData) !== JSON.stringify(slidesData)) { // Hanya update jika data berbeda
-                        slidesData = newData;
-                        currentIndex = 0; // Reset ke slide pertama saat data baru masuk
-                        createSlides();
-                        catatLogPWA("Data gambar slider diperbarui dari Tasker.");
-                    } else {
-                        catatLogPWA("Data gambar slider sama dengan yang sudah ada, tidak ada perubahan.");
-                    }
+                    currentBattleData = JSON.parse(values.jsonDataBattle);
+                    pwaMode = "idle"; // Reset mode PWA setiap ada update state dari Tasker
+                    updateUI();
+                    catatLogPWA("State battle berhasil diupdate dari Tasker.");
                 } catch (e) {
-                    catatLogPWA("Error parsing jsonDataGambarSlider dari update: " + e);
-                    // Mungkin tampilkan pesan error ke pengguna atau biarkan slide lama
+                    catatLogPWA("Error parsing jsonDataBattle dari update: " + e);
+                    elGlobalStatus.textContent = "Error menerima data dari Tasker.";
                 }
             }
         };
-        catatLogPWA("Skrip PWA Galeri Geser selesai dimuat.");
+        catatLogPWA("Skrip PWA TBC Sederhana selesai dimuat.");
     </script>
 </body>
 </html>
