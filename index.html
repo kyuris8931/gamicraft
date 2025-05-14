@@ -3,192 +3,155 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gambar Lokal dari Tasker ke Netlify PWA</title>
+    <title>Multi Gambar Lokal & Log Bersih</title>
 
-    <meta name="autotoolswebscreen"
-          type="variablejs"
-          id="dataGambarBase64"
-          label="Data Gambar (Base64)"
-          description="String Base64 dari gambar lokal."
-          defaultValue="" />
-    <meta name="autotoolswebscreen"
-          type="variablejs"
-          id="tipeMimeGambar"
-          label="Tipe MIME Gambar"
-          description="Contoh: image/jpeg, image/png."
-          defaultValue="image/png" />
-    <meta name="autotoolswebscreen"
-          type="variablejs"
-          id="infoStatusGambar"
-          label="Info Status"
-          description="Pesan status dari Tasker atau PWA."
-          defaultValue="Menunggu instruksi dari Tasker..." />
+    <meta name="autotoolswebscreen" type="variablejs" id="img1Base64" label="Gambar 1 (Base64)" defaultValue="" />
+    <meta name="autotoolswebscreen" type="variablejs" id="img1Mime" label="Gambar 1 Tipe MIME" defaultValue="image/png" />
+
+    <meta name="autotoolswebscreen" type="variablejs" id="img2Base64" label="Gambar 2 (Base64)" defaultValue="" />
+    <meta name="autotoolswebscreen" type="variablejs" id="img2Mime" label="Gambar 2 Tipe MIME" defaultValue="image/png" />
+
+    <meta name="autotoolswebscreen" type="variablejs" id="infoStatusUmum" label="Info Status Umum" defaultValue="Menunggu data gambar dari Tasker..." />
 
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f2f5;
-            color: #333;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 90vh;
-        }
-        .container {
-            background-color: #ffffff;
-            padding: 25px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            width: 90%;
-            max-width: 500px;
-            text-align: center;
-        }
-        h1 {
-            color: #1877f2; /* Biru Facebook */
-            margin-bottom: 20px;
-            font-size: 1.8em;
-        }
-        #placeholderGambar {
+        body { font-family: 'Arial', sans-serif; margin: 0; padding: 15px; background-color: #eef1f5; color: #333; display: flex; flex-direction: column; align-items: center; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); width: 95%; max-width: 600px; text-align: center; }
+        h1 { color: #007bff; margin-bottom: 25px; font-size: 1.6em; }
+        .image-gallery { display: flex; justify-content: space-around; align-items: flex-start; flex-wrap: wrap; margin-bottom: 20px; }
+        .image-container { margin: 10px; padding: 10px; border: 1px solid #ddd; border-radius: 6px; background-color: #f9f9f9; width: calc(50% - 40px); min-width: 120px; } /* Lebar 50% dikurangi margin/padding */
+        .image-container img {
             width: 100%;
-            max-width: 300px; /* Batasi lebar maksimum gambar */
-            min-height: 150px;
-            margin-top: 20px;
-            margin-bottom: 20px;
-            border: 3px dashed #ccd0d5; /* Abu-abu Facebook */
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #e9ebee; /* Latar abu-abu sangat muda */
-            color: #606770; /* Teks abu-abu */
-            font-style: italic;
-            border-radius: 8px;
-            object-fit: contain; /* Agar gambar tidak terdistorsi */
+            height: auto; /* Menjaga aspek rasio */
+            max-height: 150px; /* Batas tinggi agar tidak terlalu besar */
+            min-height: 80px;
+            display: block;
+            background-color: #eee;
+            border-radius: 4px;
+            object-fit: contain;
         }
-        #statusPesan {
-            margin-top: 15px;
-            color: #606770;
-            font-size: 0.95em;
-            min-height: 20px;
-        }
-        .log-box {
-            margin-top: 25px;
-            padding: 10px;
-            background-color: #f7f7f7;
-            border: 1px solid #dddfe2;
-            border-radius: 6px;
-            text-align: left;
-            font-size: 0.8em;
-            max-height: 150px;
-            overflow-y: auto;
-            color: #333;
-        }
-        .log-box strong {
-            color: #1877f2;
-        }
-        .log-box pre {
-            margin: 0;
-            white-space: pre-wrap;
-            word-break: break-all;
-        }
+        .image-container p { font-size: 0.85em; margin-top: 8px; color: #555; }
+        #statusUmum { margin-top: 15px; color: #28a745; font-size: 0.9em; font-weight: bold; min-height: 20px; }
+        .log-area { margin-top: 20px; padding: 10px; background-color: #2c3e50; color: #e0e0e0; border-radius: 5px; text-align: left; font-size: 0.75em; max-height: 180px; overflow-y: auto; font-family: 'Courier New', Courier, monospace; }
+        .log-area strong { color: #569cd6; }
+        .log-area pre { margin: 0; white-space: pre-wrap; word-break: break-all; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Tampilan Gambar Lokal</h1>
-        <img id="placeholderGambar" src="" alt="Area Gambar" />
-        <p id="statusPesan">Menunggu instruksi dari Tasker...</p>
-
-        <div class="log-box">
+        <h1>Galeri Gambar dari Tasker</h1>
+        <div class="image-gallery">
+            <div class="image-container">
+                <img id="gambarSlot1" src="" alt="Gambar 1" />
+                <p>Slot Gambar 1</p>
+            </div>
+            <div class="image-container">
+                <img id="gambarSlot2" src="" alt="Gambar 2" />
+                <p>Slot Gambar 2</p>
+            </div>
+            </div>
+        <p id="statusUmum">Menunggu data gambar dari Tasker...</p>
+        <div class="log-area">
             <strong>Log PWA:</strong>
             <pre id="logOutputPWA"></pre>
         </div>
     </div>
 
     <script type="text/javascript">
-        // Elemen global
-        let elGambar, elStatus, elLog;
+        let elStatusUmum, elLogPWA;
+        // Simpan referensi elemen gambar dalam objek agar mudah diakses
+        const elGambarSlots = {};
 
-        function catatLog(pesan) {
-            if (elLog) {
+        function catatLogPWA(pesan) {
+            if (elLogPWA) {
                 const waktu = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-                elLog.textContent += `[${waktu}] ${pesan}\n`;
-                elLog.scrollTop = elLog.scrollHeight; // Auto scroll ke bawah
+                elLogPWA.textContent += `[${waktu}] ${pesan}\n`;
+                elLogPWA.scrollTop = elLogPWA.scrollHeight;
             }
-            console.log(`[PWA Gambar Lokal] ${pesan}`);
+            console.log(`[PWA MultiImg] ${pesan}`);
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            elGambar = document.getElementById('placeholderGambar');
-            elStatus = document.getElementById('statusPesan');
-            elLog = document.getElementById('logOutputPWA');
+            elStatusUmum = document.getElementById('statusUmum');
+            elLogPWA = document.getElementById('logOutputPWA');
+            elGambarSlots['gambarSlot1'] = document.getElementById('gambarSlot1');
+            elGambarSlots['gambarSlot2'] = document.getElementById('gambarSlot2');
+            // Inisialisasi lebih banyak slot jika ada
 
-            catatLog("Halaman PWA siap (DOMContentLoaded).");
+            catatLogPWA("Halaman PWA Multi-Gambar siap (DOMContentLoaded).");
 
-            // Menampilkan status awal dari meta tag (jika ada)
-            if (typeof window.infoStatusGambar !== 'undefined') {
-                elStatus.textContent = window.infoStatusGambar;
-                catatLog(`Status awal dari meta: "${window.infoStatusGambar}"`);
+            if (typeof window.infoStatusUmum !== 'undefined') {
+                elStatusUmum.textContent = window.infoStatusUmum;
+                catatLogPWA(`Status umum awal dari meta: "${window.infoStatusUmum}"`);
             }
 
-            // Menampilkan gambar awal dari meta jika ada (biasanya tidak untuk base64 besar)
-            if (window.dataGambarBase64 && window.dataGambarBase64.length > 10 && window.tipeMimeGambar) { // Cek panjang > 10 untuk validitas kasar
-                catatLog(`Mencoba memuat gambar awal dari meta. Tipe: ${window.tipeMimeGambar}, Data (awal): ${window.dataGambarBase64.substring(0,30)}...`);
-                elGambar.src = `data:${window.tipeMimeGambar};base64,${window.dataGambarBase64}`;
-                elGambar.alt = "Gambar dimuat dari meta awal";
-                elStatus.textContent = "Gambar awal dimuat dari meta.";
-            } else {
-                elGambar.alt = "Belum ada gambar"; // Teks jika src kosong
-                catatLog("Tidak ada gambar awal dari meta atau data tidak valid.");
+            // Fungsi untuk memuat gambar awal dari meta (jika ada)
+            function muatGambarAwalDariMeta(slotId, base64VarName, mimeVarName) {
+                const base64Data = window[base64VarName];
+                const mimeData = window[mimeVarName];
+                const imgElement = elGambarSlots[slotId];
+
+                if (imgElement && base64Data && base64Data.length > 10 && mimeData) {
+                    catatLogPWA(`Mencoba memuat gambar awal untuk ${slotId} dari meta. Tipe: ${mimeData}. Data (awal): ${base64Data.substring(0,30)}...`);
+                    imgElement.src = `data:${mimeData};base64,${base64Data}`;
+                    imgElement.alt = `Gambar awal ${slotId}`;
+                } else {
+                    if (imgElement) imgElement.alt = `Belum ada ${slotId}`;
+                }
             }
+
+            muatGambarAwalDariMeta('gambarSlot1', 'img1Base64', 'img1Mime');
+            muatGambarAwalDariMeta('gambarSlot2', 'img2Base64', 'img2Mime');
+
         });
 
-        // Fungsi ini akan dipanggil oleh AutoTools Web Screen untuk mengupdate nilai
         var autoToolsUpdateValues = function(values) {
-            catatLog("autoToolsUpdateValues dipanggil oleh Tasker.");
-            catatLog("Data diterima: " + JSON.stringify(values));
-            catatLog("dari aku");
+            catatLogPWA("autoToolsUpdateValues dipanggil oleh Tasker.");
+            // Log objek values tanpa data base64 yang panjang
+            let valuesUntukLog = {...values}; // Buat salinan
+            if (valuesUntukLog.img1Base64) valuesUntukLog.img1Base64 = `(Data Base64 Gbr1 - Panjang: ${values.img1Base64.length})`;
+            if (valuesUntukLog.img2Base64) valuesUntukLog.img2Base64 = `(Data Base64 Gbr2 - Panjang: ${values.img2Base64.length})`;
+            catatLogPWA("Data diterima: " + JSON.stringify(valuesUntukLog));
 
-            let statusTelahDiupdate = false;
 
-            // Update status pesan jika ada
-            if (typeof values.infoStatusGambar !== 'undefined') {
-                elStatus.textContent = values.infoStatusGambar;
-                catatLog(`Info status diupdate menjadi: "${values.infoStatusGambar}"`);
-                statusTelahDiupdate = true;
+            if (typeof values.infoStatusUmum !== 'undefined') {
+                elStatusUmum.textContent = values.infoStatusUmum;
+                catatLogPWA(`Status umum diupdate: "${values.infoStatusUmum}"`);
             }
 
-            // Update gambar jika data Base64 dan tipe MIME ada
-            if (typeof values.dataGambarBase64 !== 'undefined' && typeof values.tipeMimeGambar !== 'undefined') {
-                const stringBase64 = values.dataGambarBase64;
-                const mimeTipe = values.tipeMimeGambar;
+            // Fungsi untuk mengupdate slot gambar
+            function updateSlotGambar(slotId, base64VarName, mimeVarName) {
+                if (typeof values[base64VarName] !== 'undefined' && typeof values[mimeVarName] !== 'undefined') {
+                    const stringBase64 = values[base64VarName];
+                    const mimeTipe = values[mimeVarName];
+                    const imgElement = elGambarSlots[slotId];
 
-                if (elGambar) {
-                    if (stringBase64 && stringBase64.length > 10 && mimeTipe) { // Cek panjang > 10 untuk validitas kasar
-                        catatLog(`Mengupdate gambar. Tipe: ${mimeTipe}, Data (awal): ${stringBase64.substring(0,30)}...`);
-                        elGambar.src = `data:${mimeTipe};base64,${stringBase64}`;
-                        elGambar.alt = "Gambar dari Tasker";
-                        if (!statusTelahDiupdate) { // Hanya update status jika belum diupdate oleh infoStatusGambar
-                            elStatus.textContent = "Gambar berhasil diperbarui!";
+                    if (imgElement) {
+                        if (stringBase64 && stringBase64.length > 10 && mimeTipe) {
+                            catatLogPWA(`Mengupdate ${slotId}. Tipe: ${mimeTipe}. Data (awal): ${stringBase64.substring(0,30)}...`);
+                            imgElement.src = `data:${mimeTipe};base64,${stringBase64}`;
+                            imgElement.alt = `${slotId} dari Tasker`;
+                        } else {
+                            catatLogPWA(`Data Base64 atau tipe MIME untuk ${slotId} tidak valid/kosong. Gambar dikosongkan.`);
+                            imgElement.src = "";
+                            imgElement.alt = `Gagal memuat ${slotId}`;
                         }
                     } else {
-                        catatLog("Data Base64 atau tipe MIME tidak valid/kosong. Gambar tidak diubah atau dikosongkan.");
-                        elGambar.src = ""; // Kosongkan jika data tidak valid
-                        elGambar.alt = "Gagal memuat gambar dari Tasker";
-                        if (!statusTelahDiupdate) {
-                            elStatus.textContent = "Gagal memuat gambar: data tidak valid.";
-                        }
+                        catatLogPWA(`Elemen <img> '${slotId}' tidak ditemukan.`);
                     }
-                } else {
-                    catatLog("Elemen <img> 'placeholderGambar' tidak ditemukan di DOM.");
                 }
-            } else {
-                catatLog("Tidak ada 'dataGambarBase64' atau 'tipeMimeGambar' dalam data update.");
+            }
+
+            updateSlotGambar('gambarSlot1', 'img1Base64', 'img1Mime');
+            updateSlotGambar('gambarSlot2', 'img2Base64', 'img2Mime');
+            // Panggil updateSlotGambar untuk slot lain jika ada
+
+            // Update status umum jika tidak ada pesan spesifik dan ada update gambar
+            if (typeof values.infoStatusUmum === 'undefined' && (values.img1Base64 || values.img2Base64)) {
+                 elStatusUmum.textContent = "Satu atau lebih gambar telah diperbarui.";
             }
         };
 
-        catatLog("Skrip PWA selesai dimuat. Menunggu interaksi Tasker.");
+        catatLogPWA("Skrip PWA Multi-Gambar selesai dimuat.");
     </script>
 </body>
 </html>
