@@ -5,51 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>TBC Konsep V5.2 (PseudoMap Tengah)</title>
 
-    <meta name="autotoolswebscreen" type="variablejs" id="jsonDataBattle" label="Data JSON Battle" 
-          defaultValue='{
-            "BattleState": "Ongoing",
-            "Round": 1,
-            "Turn": 1,
-            "ActiveUnitID": "Riou",
-            "BattleMessage": "Giliran Riou. Pilih aksi.",
-            "TeamSP": 3,
-            "MaxTeamSP": 5,
-            "Units": [
-              {
-                "id": "Tir", "Name": "Tir", "Type": "Ally", "Status": "Idle", "TurnOrder": 4, "PseudoPos": -1,
-                "Stats": { "Level": 1, "HP": 90, "MaxHP": 90, "ATK": 12 },
-                "Skills": {
-                  "normalAttackDesc": "Pukulan tongkat sihir.", "uniqueSkillId": "skillTir01", "uniqueSkillName": "Perisai Cahaya",
-                  "uniqueSkillDesc": "Memberikan perisai ke satu teman. Biaya: 1 SP.", "uniqueSkillSpCost": 1, "targetType": "SingleAlly", "range": "Any",
-                  "ultimateName": "Cahaya Penghakiman", "ultimateDesc": "Serangan cahaya ke semua musuh. Membutuhkan Gauge penuh.", "targetType": "AllEnemies", "range": "Any"
-                },
-                "CurrentGauge": 20, "MaxGauge": 100
-              },
-              {
-                "id": "Riou", "Name": "Riou", "Type": "Ally", "Status": "Active", "TurnOrder": 1, "PseudoPos": 0,
-                "Stats": { "Level": 1, "HP": 75, "MaxHP": 75, "ATK": 15 },
-                "Skills": {
-                  "normalAttackDesc": "Serangan pedang standar.", "targetType": "SingleEnemy", "range": 1,
-                  "uniqueSkillId": "skillRiou01", "uniqueSkillName": "Tebasan Ganda",
-                  "uniqueSkillDesc": "Menyerang musuh dua kali dengan kekuatan sedang. Biaya: 2 SP.", "uniqueSkillSpCost": 2, "targetType": "SingleEnemy", "range": 1,
-                  "ultimateName": "Teknik Naga Biru", "ultimateDesc": "Serangan kuat ke satu musuh. Membutuhkan Gauge penuh.", "targetType": "SingleEnemy", "range": 1
-                },
-                "CurrentGauge": 50, "MaxGauge": 100
-              },
-              {
-                "id": "MusuhA", "Name": "Goblin Penjaga", "Type": "Enemy", "Status": "Idle", "TurnOrder": 2, "PseudoPos": 1,
-                "Stats": { "Level": 1, "HP": 60, "MaxHP": 60, "ATK": 10 }
-              },
-              {
-                "id": "MusuhB", "Name": "Slime Merah", "Type": "Enemy", "Status": "Idle", "TurnOrder": 3, "PseudoPos": 2,
-                "Stats": { "Level": 1, "HP": 45, "MaxHP": 45, "ATK": 8 }
-              },
-              {
-                "id": "MusuhC", "Name": "Wolf", "Type": "Enemy", "Status": "Idle", "TurnOrder": 5, "PseudoPos": 3,
-                "Stats": { "Level": 1, "HP": 50, "MaxHP": 50, "ATK": 12 }
-              }
-            ]
-          }' />
+    <meta name="autotoolswebscreen" type="variablejs" id="jsonDataBattle" label="Data JSON Battle" defaultValue='' />
     <meta name="autotoolswebscreen" type="variablejs" id="infoGlobal" label="Info Global Awal" defaultValue="Memuat info global..." />
 
     <style>
