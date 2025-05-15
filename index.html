@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>TBC Konsep V5.2 (PseudoMap Tengah)</title>
+    <title>TBC Konsep V5.2 (PseudoMap Tengah - Fix)</title>
 
     <meta name="autotoolswebscreen" type="variablejs" id="jsonDataBattle" label="Data JSON Battle" defaultValue='{}' />
     <meta name="autotoolswebscreen" type="variablejs" id="infoGlobal" label="Info Global Awal" defaultValue="Memuat info global..." />
@@ -36,26 +36,26 @@
             width: 100%; background-color: var(--bg-panel); padding: 10px 0; 
             overflow-x: auto; white-space: nowrap; text-align: center; 
             border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); 
-            min-height: 80px; /* Adjusted for potentially taller items */
+            min-height: 80px; 
             box-sizing: border-box;
         }
         #pseudomap-strip {
-            display: flex; /* Use flexbox for centering and spacing */
+            display: flex; 
             justify-content: center;
             align-items: center;
         }
         .pseudomap-unit-item, .pseudomap-placeholder-item { 
-            display: inline-flex; /* Make items flex containers for content alignment */
+            display: inline-flex; 
             flex-direction: column;
             justify-content: center;
             align-items: center;
             background-color: var(--bg-main); border: 1px solid var(--border-color); 
-            padding: 6px 10px; margin: 0 4px; /* Increased margin slightly */
-            border-radius: 6px; /* Slightly more rounded */
-            width: 85px; /* Fixed width for consistency */
-            height: 60px; /* Fixed height */
+            padding: 6px 10px; margin: 0 4px; 
+            border-radius: 6px; 
+            width: 85px; 
+            height: 60px; 
             box-sizing: border-box;
-            font-size: 0.7em; /* Smaller font for more info */
+            font-size: 0.7em; 
             transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; 
         }
         .pseudomap-placeholder-item {
@@ -147,15 +147,14 @@
         let pwaMode = "idle";
         let selectedAction = { type: null, id: null, name: null, spCost: 0, targetType: null, range: null, desc: "" };
         let focusedEnemyIdxPWA = 0;
-        // activeHeroPWA akan diambil dari bState.Units berdasarkan ActiveUnitID atau Status Active
-
+        
         // --- Referensi Elemen DOM ---
         let elRoundTurn, elBattleMsg, elEnemyFocus, elFocusedEnemyName, elFocusedEnemyHp;
         let elPseudomapStrip, elCmdPanelActiveHeroInfo, elActiveHeroName, elActiveHeroHp, elActiveHeroGauge;
         let elCmdPanelActionButtons, elBtnAtk, elBtnSkill, elBtnUlt, elBtnCancelAction;
         let elTeamSpDisplay, elDescPanelOverlay, elDescTitleText, elDescContentArea, elCloseDescBtn, elPwaLog;
 
-        const MAX_VISIBLE_SLOTS_PSEUDOMAP = 5; // Jumlah slot yang ingin ditampilkan
+        const MAX_VISIBLE_SLOTS_PSEUDOMAP = 5; 
 
         function pwaLogger(msg) { 
             if(elPwaLog) {
@@ -172,8 +171,45 @@
                 const hero = bState.Units.find(u => u.id === bState.ActiveUnitID && u.Type === "Ally");
                 if (hero) return hero;
             }
-            // Fallback jika ActiveUnitID tidak ada atau tidak cocok, cari berdasarkan Status
             return bState.Units.find(u => u.Status === "Active" && u.Type === "Ally");
+        }
+
+        // *** FUNGSI YANG HILANG DIKEMBALIKAN DI SINI ***
+        function renderFocusedEnemy() {
+            if (!elFocusedEnemyName || !elFocusedEnemyHp) {
+                pwaLogger("renderFocusedEnemy: Elemen nama/hp musuh tidak ditemukan.");
+                return;
+            }
+            if (!bState.Units || bState.Units.length === 0) {
+                elFocusedEnemyName.textContent = "Tidak ada musuh."; 
+                elFocusedEnemyHp.textContent = ""; 
+                return;
+            }
+            // Cari musuh pertama yang hidup sebagai default, atau berdasarkan focusedEnemyIdxPWA
+            // Untuk contoh ini, kita ambil musuh pertama yang hidup jika focusedEnemyIdxPWA tidak valid
+            let livingEnemies = bState.Units.filter(u => u.Type === "Enemy" && u.Stats && u.Stats.HP > 0);
+            if (livingEnemies.length === 0) {
+                elFocusedEnemyName.textContent = "Musuh Habis!"; 
+                elFocusedEnemyHp.textContent = ""; 
+                return;
+            }
+
+            focusedEnemyIdxPWA = Math.max(0, Math.min(focusedEnemyIdxPWA, livingEnemies.length - 1));
+            const enemy = livingEnemies[focusedEnemyIdxPWA];
+
+            if (enemy) {
+                elFocusedEnemyName.textContent = enemy.Name;
+                elFocusedEnemyHp.textContent = `HP: ${enemy.Stats.HP}/${enemy.Stats.MaxHP}`;
+            } else {
+                 // Fallback jika focusedEnemyIdxPWA menunjuk ke sesuatu yang tidak ada setelah filter
+                if (livingEnemies.length > 0) {
+                    elFocusedEnemyName.textContent = livingEnemies[0].Name;
+                    elFocusedEnemyHp.textContent = `HP: ${livingEnemies[0].Stats.HP}/${livingEnemies[0].Stats.MaxHP}`;
+                } else {
+                    elFocusedEnemyName.textContent = "Musuh?"; 
+                    elFocusedEnemyHp.textContent = "-/-";
+                }
+            }
         }
 
 
@@ -195,66 +231,37 @@
                 return;
             }
 
-            // Asumsi Tasker sudah mengurutkan bState.Units sehingga unit aktif (PseudoPos: 0) ada di bState.Units[0]
-            // Jika tidak, kita perlu mencari unit aktif berdasarkan ActiveUnitID atau Status.
             let activeUnitInFullList = bState.Units.find(u => u.PseudoPos === 0);
-            if (!activeUnitInFullList && bState.ActiveUnitID) { // Fallback jika PseudoPos 0 tidak ada
+            if (!activeUnitInFullList && bState.ActiveUnitID) { 
                  activeUnitInFullList = bState.Units.find(u => u.id === bState.ActiveUnitID);
             }
-             if (!activeUnitInFullList && bState.Units.length > 0) { // Fallback lagi ke unit pertama jika masih tidak ada
-                 activeUnitInFullList = bState.Units[0]; // Ini asumsi berisiko jika tidak diurutkan
-                 pwaLogger("renderPseudomap: Tidak ada unit dengan PseudoPos 0 atau cocok ActiveUnitID, menggunakan unit pertama dari list sebagai acuan tengah.");
+            if (!activeUnitInFullList && bState.Units.length > 0) { 
+                 activeUnitInFullList = bState.Units.find(u => u.Status === "Active") || bState.Units[0]; 
+                 pwaLogger("renderPseudomap: Tidak ada unit dengan PseudoPos 0, menggunakan unit Aktif atau unit pertama.");
             }
-
 
             const displaySlots = new Array(MAX_VISIBLE_SLOTS_PSEUDOMAP).fill(null);
             const centerSlotIndex = Math.floor(MAX_VISIBLE_SLOTS_PSEUDOMAP / 2);
 
             if (activeUnitInFullList) {
                 displaySlots[centerSlotIndex] = activeUnitInFullList;
-
-                // Isi slot ke kanan dari unit aktif
-                let currentFullListIndex = bState.Units.indexOf(activeUnitInFullList);
-                for (let i = 1; i <= centerSlotIndex; i++) {
-                    const targetDisplayIndex = centerSlotIndex + i;
+                
+                let positiveUnits = bState.Units.filter(u => u.PseudoPos > 0 && u.id !== activeUnitInFullList.id).sort((a,b) => a.PseudoPos - b.PseudoPos);
+                for (let i = 0; i < positiveUnits.length; i++) {
+                    const targetDisplayIndex = centerSlotIndex + 1 + i;
                     if (targetDisplayIndex < MAX_VISIBLE_SLOTS_PSEUDOMAP) {
-                        // Cari unit berikutnya di bState.Units yang memiliki PseudoPos positif lebih besar
-                        let nextUnit = null;
-                        let minPositivePseudoPosFound = Infinity;
-                        // Cari unit dengan PseudoPos positif terkecil SETELAH activeUnitInFullList
-                        // atau unit berikutnya secara berurutan jika PseudoPos tidak berurutan sempurna
-                        let searchIdx = currentFullListIndex + 1;
-                        while(searchIdx < bState.Units.length) {
-                            const unit = bState.Units[searchIdx];
-                            if (unit.PseudoPos > 0 && !displaySlots.includes(unit)) { // Belum ada di displaySlots
-                                // Ini adalah kandidat. Untuk sementara ambil yang pertama ditemukan setelahnya.
-                                // Logika yang lebih baik akan mencari PseudoPos +1, +2, dst.
-                                nextUnit = unit;
-                                break; 
-                            }
-                            searchIdx++;
-                        }
-                        // Untuk penyederhanaan, kita ambil unit berikutnya dalam array yang sudah diurutkan oleh PseudoPos
-                        // Ini mengasumsikan bState.Units sudah diurutkan dengan benar: Negatif, 0, Positif
-                        let positiveUnits = bState.Units.filter(u => u.PseudoPos > 0).sort((a,b) => a.PseudoPos - b.PseudoPos);
-                        if (positiveUnits[i-1]) {
-                             displaySlots[targetDisplayIndex] = positiveUnits[i-1];
-                        }
-                    }
+                        displaySlots[targetDisplayIndex] = positiveUnits[i];
+                    } else break; 
                 }
 
-                // Isi slot ke kiri dari unit aktif
-                for (let i = 1; i <= centerSlotIndex; i++) {
-                    const targetDisplayIndex = centerSlotIndex - i;
+                let negativeUnits = bState.Units.filter(u => u.PseudoPos < 0 && u.id !== activeUnitInFullList.id).sort((a,b) => b.PseudoPos - a.PseudoPos); // Sort descending for left side: -1, -2
+                for (let i = 0; i < negativeUnits.length; i++) {
+                    const targetDisplayIndex = centerSlotIndex - 1 - i;
                     if (targetDisplayIndex >= 0) {
-                        let negativeUnits = bState.Units.filter(u => u.PseudoPos < 0).sort((a,b) => b.PseudoPos - a.PseudoPos); // Sort descending: -1, -2
-                         if (negativeUnits[i-1]) {
-                             displaySlots[targetDisplayIndex] = negativeUnits[i-1];
-                        }
-                    }
+                        displaySlots[targetDisplayIndex] = negativeUnits[i];
+                    } else break;
                 }
             } else if (bState.Units.length > 0) {
-                 // Jika tidak ada unit aktif yg jelas, tampilkan saja beberapa unit pertama
                  for(let i=0; i < Math.min(bState.Units.length, MAX_VISIBLE_SLOTS_PSEUDOMAP); i++) {
                      displaySlots[i] = bState.Units[i];
                  }
@@ -272,14 +279,16 @@
                         item.classList.add('active-turn-unit');
                     }
                     
-                    // Logika targeting highlight
-                    if (pwaMode === "targeting" && unit.Stats.HP > 0) {
+                    if (pwaMode === "targeting" && unit.Stats && unit.Stats.HP > 0) {
                         let isValidTarget = false;
-                        // Contoh sederhana, perlu disesuaikan dengan detail skill (range, tipe, dll.)
-                        if (selectedAction.targetType === "SingleEnemy" && unit.Type === "Enemy") isValidTarget = true;
-                        else if (selectedAction.targetType === "SingleAlly" && unit.Type === "Ally") isValidTarget = true;
-                        else if (selectedAction.targetType === "AllEnemies" && unit.Type === "Enemy") isValidTarget = true;
-                        // Tambahkan logika lain berdasarkan selectedAction.range, dll.
+                        const skillTargetType = selectedAction.targetType;
+
+                        if (skillTargetType === "SingleEnemy" && unit.Type === "Enemy") isValidTarget = true;
+                        else if (skillTargetType === "SingleAlly" && unit.Type === "Ally") isValidTarget = true;
+                        else if (skillTargetType === "AllEnemies" && unit.Type === "Enemy") isValidTarget = true;
+                        else if (skillTargetType === "AllAllies" && unit.Type === "Ally") isValidTarget = true;
+                        else if (skillTargetType === "Self" && unit.id === getActiveHero()?.id) isValidTarget = true;
+                        // TODO: Tambahkan logika untuk 'range' jika diperlukan
 
                         if (isValidTarget) {
                             item.classList.add('targetable-in-map');
@@ -305,7 +314,7 @@
                 if(elCmdPanelActiveHeroInfo) elCmdPanelActiveHeroInfo.classList.add('is-hidden');
                 if(elCmdPanelActionButtons) elCmdPanelActionButtons.classList.remove('is-hidden');
                 
-                pwaLogger("renderCommandPanel: Menampilkan Tombol Aksi. Visibilitas #action-buttons-list: " + (elCmdPanelActionButtons ? window.getComputedStyle(elCmdPanelActionButtons).display : 'elCmdPanelActionButtons null'));
+                pwaLogger("renderCommandPanel: Menampilkan Tombol Aksi.");
 
                 if(elBtnSkill && activeHero.Skills) elBtnSkill.textContent = activeHero.Skills.uniqueSkillName || "Skill";
                 else if(elBtnSkill) elBtnSkill.textContent = "Skill"; 
@@ -333,11 +342,8 @@
         
         function handleTargetSelectionInMap(targetUnit) {
             pwaLogger(`Target dipilih di Peta: ${targetUnit.Name} (ID: ${targetUnit.id}) untuk aksi ${selectedAction.name}`);
-            // Di sini, PWA sudah mengidentifikasi target.
-            // Langkah berikutnya adalah mengirim ini ke Tasker untuk validasi dan eksekusi.
             confirmTargetAndSendCommand(targetUnit);
         }
-
 
         function showDescriptionPanel(title, content) {
             if(elDescTitleText) elDescTitleText.textContent = title;
@@ -366,13 +372,12 @@
                 id: skillDetails.id || (actionType === 'normalAttack' ? 'normalAttack' : null), 
                 name: skillDetails.name, 
                 spCost: skillDetails.spCost || 0, 
-                targetType: skillDetails.targetType, // Diambil dari JSON
-                range: skillDetails.range, // Diambil dari JSON
+                targetType: skillDetails.targetType, 
+                range: skillDetails.range, 
                 desc: skillDetails.desc
             };
             pwaMode = "targeting";
             
-            // Tampilkan deskripsi singkat skill yang dipilih
             const descTitle = selectedAction.name || actionType;
             let descContent = selectedAction.desc || "Pilih target.";
             if (selectedAction.spCost > 0) descContent += ` (Biaya: ${selectedAction.spCost} SP)`;
@@ -380,14 +385,14 @@
             
             if(elBattleMsg) elBattleMsg.textContent = `Pilih target untuk ${selectedAction.name}...`;
             if(elCmdPanelActionButtons) elCmdPanelActionButtons.classList.add('is-hidden'); 
-            refreshAllUIElements(); // Untuk me-render ulang PseudoMap dengan highlight target
+            refreshAllUIElements(); 
         }
 
         function confirmTargetAndSendCommand(targetUnit) {
             const activeHero = getActiveHero();
             if (!activeHero) {
-                pwaLogger("confirmTargetAndSendCommand: Tidak ada hero aktif untuk mengirim command!");
-                pwaMode = "idle"; // Kembali ke idle jika error
+                pwaLogger("confirmTargetAndSendCommand: Tidak ada hero aktif!");
+                pwaMode = "idle"; 
                 refreshAllUIElements();
                 return;
             }
@@ -404,21 +409,21 @@
                 pwaLogger("Kirim command ke Tasker: " + command);
             } else { pwaLogger("AutoTools.sendCommand tidak tersedia."); }
             
-            pwaMode = "idle"; // Kembali ke mode idle setelah mengirim command
+            pwaMode = "idle"; 
             if(elBattleMsg) elBattleMsg.textContent = "Menunggu respon Tasker...";
-            // UI akan diupdate penuh saat Tasker mengirim state baru
         }
 
         function refreshAllUIElements() {
             pwaLogger("Memulai refreshAllUIElements. Mode PWA: " + pwaMode);
             if (!bState || Object.keys(bState).length === 0) { 
                 pwaLogger("refreshAllUIElements: bState kosong.");
-                // Tampilkan state loading atau error yang lebih jelas
                 if(elRoundTurn) elRoundTurn.textContent = "Ronde: - Turn: -";
                 if(elBattleMsg && (!elDescPanelOverlay || !elDescPanelOverlay.classList.contains('visible'))) elBattleMsg.textContent = "Data battle tidak tersedia...";
-                renderPseudomap(); // Tetap render pseudomap (akan menampilkan placeholder)
-                if(elFocusedEnemyName) elFocusedEnemyName.textContent = "-";
+                renderPseudomap(); 
+                // renderFocusedEnemy(); // Panggil setelah memastikan elemen ada
+                if(elFocusedEnemyName) elFocusedEnemyName.textContent = "-"; // Reset manual jika renderFocusedEnemy tidak dipanggil
                 if(elFocusedEnemyHp) elFocusedEnemyHp.textContent = "HP: -/-";
+
                 if(elCmdPanelActiveHeroInfo) elCmdPanelActiveHeroInfo.classList.add('is-hidden');
                 if(elCmdPanelActionButtons) elCmdPanelActionButtons.classList.add('is-hidden');
                 if(elTeamSpDisplay) elTeamSpDisplay.textContent = "SP Tim: -/-";
@@ -428,9 +433,9 @@
             if(elRoundTurn) elRoundTurn.textContent = `Ronde: ${bState.Round || '-'} Turn: ${bState.Turn || '-'}`;
             if(elBattleMsg && (!elDescPanelOverlay || !elDescPanelOverlay.classList.contains('visible'))) elBattleMsg.textContent = bState.BattleMessage || "Menunggu...";
             
-            renderFocusedEnemy(); // Urutan bisa penting, enemy focus dulu
-            renderPseudomap();    // Lalu pseudomap
-            renderCommandPanel(); // Terakhir command panel
+            renderFocusedEnemy(); 
+            renderPseudomap();    
+            renderCommandPanel(); 
 
             pwaLogger("UI direfresh sepenuhnya. Mode PWA: " + pwaMode);
         }
@@ -498,28 +503,30 @@
                 });
             }
 
+            const activeHeroForActionButtons = getActiveHero(); // Ambil hero aktif sekali untuk semua tombol
+
             if(elBtnAtk) elBtnAtk.addEventListener('click', () => {
-                const activeHero = getActiveHero();
-                if (!activeHero || !activeHero.Skills) { pwaLogger("Attack gagal: Hero atau skills tidak ada."); return; }
+                const currentActiveHero = getActiveHero(); // Selalu ambil yang terbaru saat klik
+                if (!currentActiveHero || !currentActiveHero.Skills) { pwaLogger("Attack gagal: Hero atau skills tidak ada."); return; }
                 selectActionForTargeting('normalAttack', {
-                    name: activeHero.Skills.normalAttackName || "Serang Biasa",
-                    desc: activeHero.Skills.normalAttackDesc || "Serangan fisik standar.",
-                    targetType: activeHero.Skills.targetType || "SingleEnemy", // Ambil dari JSON
-                    range: activeHero.Skills.range || 1 // Ambil dari JSON
+                    name: currentActiveHero.Skills.normalAttackName || "Serang Biasa",
+                    desc: currentActiveHero.Skills.normalAttackDesc || "Serangan fisik standar.",
+                    targetType: currentActiveHero.Skills.targetType || "SingleEnemy", 
+                    range: currentActiveHero.Skills.range // Bisa undefined jika tidak ada
                 });
             });
             if(elBtnSkill) elBtnSkill.addEventListener('click', () => {
-                const activeHero = getActiveHero();
-                if (!activeHero || !activeHero.Skills) { pwaLogger("Skill gagal: Hero atau skills tidak ada."); return; }
-                const spCost = activeHero.Skills.uniqueSkillSpCost || 0;
+                const currentActiveHero = getActiveHero();
+                if (!currentActiveHero || !currentActiveHero.Skills) { pwaLogger("Skill gagal: Hero atau skills tidak ada."); return; }
+                const spCost = currentActiveHero.Skills.uniqueSkillSpCost || 0;
                 if (bState.TeamSP >= spCost ) {
                     selectActionForTargeting('uniqueSkill', {
-                        id: activeHero.Skills.uniqueSkillId,
-                        name: activeHero.Skills.uniqueSkillName || "Skill Unik",
+                        id: currentActiveHero.Skills.uniqueSkillId,
+                        name: currentActiveHero.Skills.uniqueSkillName || "Skill Unik",
                         spCost: spCost,
-                        targetType: activeHero.Skills.targetType, // Ambil dari JSON
-                        range: activeHero.Skills.range, // Ambil dari JSON
-                        desc: activeHero.Skills.uniqueSkillDesc || "Efek skill unik."
+                        targetType: currentActiveHero.Skills.targetType, 
+                        range: currentActiveHero.Skills.range, 
+                        desc: currentActiveHero.Skills.uniqueSkillDesc || "Efek skill unik."
                     });
                 } else {
                     pwaLogger(`SP Tim tidak cukup untuk Skill! Butuh: ${spCost}, Punya: ${bState.TeamSP}`);
@@ -527,15 +534,15 @@
                 }
             });
             if(elBtnUlt) elBtnUlt.addEventListener('click', () => {
-                 const activeHero = getActiveHero();
-                 if (!activeHero || !activeHero.Skills) { pwaLogger("Ultimate gagal: Hero atau skills tidak ada."); return; }
-                 if ((activeHero.CurrentGauge || 0) >= (activeHero.MaxGauge || 100)) {
+                 const currentActiveHero = getActiveHero();
+                 if (!currentActiveHero || !currentActiveHero.Skills) { pwaLogger("Ultimate gagal: Hero atau skills tidak ada."); return; }
+                 if ((currentActiveHero.CurrentGauge || 0) >= (currentActiveHero.MaxGauge || 100)) {
                     selectActionForTargeting('ultimateSkill', {
-                        id: activeHero.Skills.ultimateId, // Jika ada ID spesifik
-                        name: activeHero.Skills.ultimateName || "Ultimate",
-                        targetType: activeHero.Skills.targetType, // Ambil dari JSON
-                        range: activeHero.Skills.range, // Ambil dari JSON
-                        desc: activeHero.Skills.ultimateDesc || "Serangan pamungkas."
+                        id: currentActiveHero.Skills.ultimateId, 
+                        name: currentActiveHero.Skills.ultimateName || "Ultimate",
+                        targetType: currentActiveHero.Skills.targetType, 
+                        range: currentActiveHero.Skills.range, 
+                        desc: currentActiveHero.Skills.ultimateDesc || "Serangan pamungkas."
                     });
                  } else {
                     pwaLogger("Gauge Ultimate belum penuh!");
@@ -551,12 +558,29 @@
 
             if(elCloseDescBtn) elCloseDescBtn.addEventListener('click', hideDescriptionPanel);
             
-            if(elEnemyFocus) { /* ... (event listener swipe enemy focus tetap sama) ... */ }
+            // Event listener swipe enemy focus
+            let enemySwipeStartX = 0;
+            if(elEnemyFocus) {
+                elEnemyFocus.addEventListener('touchstart', (e) => { enemySwipeStartX = e.touches[0].clientX; }, { passive: true });
+                elEnemyFocus.addEventListener('touchend', (e) => {
+                    if (pwaMode !== "idle") return; 
+                    let enemySwipeEndX = e.changedTouches[0].clientX;
+                    const livingEnemies = bState.Units ? bState.Units.filter(u => u.Type === "Enemy" && u.Stats && u.Stats.HP > 0) : [];
+                    if (Math.abs(enemySwipeStartX - enemySwipeEndX) > 30 && livingEnemies.length > 1) { // Swipe minimal 30px
+                        if (enemySwipeEndX < enemySwipeStartX) { // Swipe ke kiri
+                            focusedEnemyIdxPWA = (focusedEnemyIdxPWA + 1) % livingEnemies.length;
+                        } else { // Swipe ke kanan
+                            focusedEnemyIdxPWA = (focusedEnemyIdxPWA - 1 + livingEnemies.length) % livingEnemies.length;
+                        }
+                        renderFocusedEnemy(); // Update tampilan musuh yang difokuskan
+                        pwaLogger(`Musuh difokuskan (swipe): ${livingEnemies[focusedEnemyIdxPWA].Name}`);
+                    }
+                }, { passive: true });
+            }
         });
 
         var autoToolsUpdateValues = function(values) {
             pwaLogger("autoToolsUpdateValues dipanggil oleh Tasker.");
-            // ... (sisa fungsi sama seperti v5.1) ...
             let logValues = {...values};
             if(logValues.jsonDataBattle && typeof logValues.jsonDataBattle === 'string') {
                 logValues.jsonDataBattle = `(JSON diterima - panjang: ${values.jsonDataBattle.length})`;
@@ -581,24 +605,27 @@
                         return;
                     }
 
+                    // Cek apakah ada perubahan signifikan sebelum update besar
                     if (JSON.stringify(bState) !== JSON.stringify(newBState)) {
                         bState = newBState;
-                        pwaMode = "idle"; 
+                        pwaMode = "idle"; // Selalu reset ke idle saat ada update besar dari Tasker
                         hideDescriptionPanel(); 
-                        refreshAllUIElements();
+                        refreshAllUIElements(); // Ini akan memanggil renderFocusedEnemy, renderPseudomap, dll.
                         pwaLogger("State battle PWA berhasil diupdate dari Tasker.");
                     } else {
                         pwaLogger("Data JSON dari Tasker sama dengan state saat ini, tidak ada update UI besar.");
+                        // Update pesan jika berbeda, meskipun state utama sama
                         if (values.infoGlobal && elBattleMsg && elBattleMsg.textContent !== values.infoGlobal) {
                            elBattleMsg.textContent = values.infoGlobal;
                         }
                     }
                 } catch (e) {
                     pwaLogger("Error parsing atau memproses jsonDataBattle dari update Tasker: " + e);
+                    // Mungkin tampilkan pesan error ke pengguna atau coba pulihkan state lama
                 }
             }
         };
-        pwaLogger("Skrip PWA TBC V5.2 selesai dimuat.");
+        pwaLogger("Skrip PWA TBC V5.2 (Fix) selesai dimuat.");
     </script>
 </body>
 </html>
