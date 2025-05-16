@@ -404,7 +404,7 @@
             if(targetItemInMap) targetItemInMap.classList.add('selected-in-map');
 
             if (window.AutoTools && typeof window.AutoTools.sendCommand === 'function') {
-                const command = `actorId=${activeHero.id}&actionType=${selectedAction.type}&actionId=${selectedAction.id || selectedAction.name}&targetId=${targetUnit.id}`;
+                const command = `${activeHero.id}=:={selectedAction.type}=:={selectedAction.id || selectedAction.name}=:=${targetUnit.id}`;
                 window.AutoTools.sendCommand(command, "TBC_AKSI_PEMAIN", false);
                 pwaLogger("Kirim command ke Tasker: " + command);
             } else { pwaLogger("AutoTools.sendCommand tidak tersedia."); }
