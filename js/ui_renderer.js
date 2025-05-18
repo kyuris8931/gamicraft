@@ -1,13 +1,5 @@
 // js/ui_renderer.js
 
-// --- DOM Element References (will be initialized in main.js) ---
-let elBattleScreen, elRoundTurnInfo, elBattleMessageArea;
-let elMainEnemyDisplayContainer, elMainEnemyDisplayWrapper, elPrevEnemyBtn, elNextEnemyBtn;
-let elPseudomapStrip;
-let elActiveHeroPanel;
-let elBattleEndScreen, elBattleResultMessage;
-// Note: pwaLogOutputElement is initialized in main.js and used by pwaLogger from config.js
-
 // --- UI State Variables ---
 let currentEnemyDisplayIndex = 0; // Index for the currently shown enemy in the main display
 let visibleEnemies = [];          // Array of living enemies for the main display
