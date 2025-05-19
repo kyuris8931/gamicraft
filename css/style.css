@@ -113,8 +113,8 @@ body {
 }
 
 .enemy-display-item img {
-    max-width: 500px; /* Adjust as needed */
-    max-height: 500px; /* Adjust as needed */
+    max-width: 200px; /* Adjust as needed */
+    max-height: 200px; /* Adjust as needed */
     object-fit: contain;
     margin-bottom: 8px;
     border-radius: var(--border-radius-small);
