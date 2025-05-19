@@ -99,8 +99,8 @@ body {
 }
 
 .enemy-display-item {
-    min-width: 1000%; /* Each enemy item fills the container width */
-    height: 1000%;
+    min-width: 100%; /* Each enemy item fills the container width */
+    height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center; /* Center content vertically */
@@ -113,8 +113,8 @@ body {
 }
 
 .enemy-display-item img {
-    max-width: 100px; /* Adjust as needed */
-    max-height: 100px; /* Adjust as needed */
+    max-width: 5000px; /* Adjust as needed */
+    max-height: 500px; /* Adjust as needed */
     object-fit: contain;
     margin-bottom: 8px;
     border-radius: var(--border-radius-small);
